@@ -86,7 +86,15 @@ public class AIManager : MonoBehaviour
 
     public void pathUpdate(PathFinderAI AI)
     {
+        Vector2 AIPos = new Vector2(AI.obj.transform.position.x, AI.obj.transform.position.y);
+        RaycastHit hit = new RaycastHit();
+        LayerMask mask = LayerMask.GetMask("AI");
+        if (Physics2D.Raycast(AI.obj.transform.position, (AIPos - AI.targetPos).normalized, Vector2.Distance(AIPos, AI.targetPos), mask, -1, 1))
+        {
+            Debug.DrawLine(AI.obj.transform.position, hit.point);
+        }
         AI.path.Add(AI.targetPos);
+
         Debug.Log("Path updated");
     }
 }
