@@ -53,6 +53,7 @@ public class AIManager : MonoBehaviour
             {
                 if(AI.path.Count != 0)
                 {
+                    Debug.DrawRay(AIPos, -(AIPos - AI.targetPos).normalized, Color.red);
                     Vector2 moveDir = (AI.path[0] - AIPos).normalized;
                     AI.obj.transform.position += (Vector3)(moveDir * AI.velocity * Time.deltaTime);
                     float angle = Vector2.SignedAngle(Vector2.up, moveDir);
@@ -87,11 +88,13 @@ public class AIManager : MonoBehaviour
     public void pathUpdate(PathFinderAI AI)
     {
         Vector2 AIPos = new Vector2(AI.obj.transform.position.x, AI.obj.transform.position.y);
-        RaycastHit hit = new RaycastHit();
         LayerMask mask = LayerMask.GetMask("AI");
-        if (Physics2D.Raycast(AI.obj.transform.position, (AIPos - AI.targetPos).normalized, Vector2.Distance(AIPos, AI.targetPos), mask, -1, 1))
+        RaycastHit2D hit = Physics2D.Raycast(AI.obj.transform.position, (AI.targetPos-AIPos).normalized, Mathf.Infinity, mask);
+
+        if (hit.collider != null)
         {
-            Debug.DrawLine(AI.obj.transform.position, hit.point);
+            Debug.DrawLine(AI.obj.transform.position, hit.point, Color.green);
+            Debug.Log(AI.obj.name + " hit " + hit.collider.name);
         }
         AI.path.Add(AI.targetPos);
 
