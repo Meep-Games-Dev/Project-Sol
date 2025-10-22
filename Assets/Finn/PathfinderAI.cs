@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
-using UnityEditor.TerrainTools;
 using UnityEngine;
 
 public class Node
@@ -11,7 +9,7 @@ public class Node
     public float targetDistance;
     public float totalCost;
     public bool evaluated;
-    public Node parent; 
+    public Node parent;
 }
 
 public class PathfinderAI : MonoBehaviour
@@ -22,15 +20,21 @@ public class PathfinderAI : MonoBehaviour
     public int searchAreaWidth;
     public int searchAreaHeight;
 
+    public List<Vector2> path = new List<Vector2>();
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        Debug.Log(PathFind(target, searchAreaWidth, searchAreaHeight));
+        path = PathFind(target, searchAreaWidth, searchAreaHeight);
     }
 
     // Update is called once per frame
     void Update()
     {
+        for (int i = 1; i < path.Count; i++)
+        {
+            Debug.DrawLine(path[i - 1], path[i], Color.green);
+        }
     }
 
     List<Vector2> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight)
@@ -75,7 +79,7 @@ public class PathfinderAI : MonoBehaviour
         startNode.targetDistance = Vector2.Distance(startNode.position, target);
         startNode.totalCost = startNode.targetDistance;
         OpenNodes.Add(startNode);
-
+        object[] totalObjs = FindObjectsByType(typeof(SpriteRenderer), FindObjectsSortMode.None);
         Node targetNode = null;
         while (OpenNodes.Count > 0)
         {
@@ -97,25 +101,26 @@ public class PathfinderAI : MonoBehaviour
                         continue;
                     }
                     if (new Vector2(x, y) != currentNode.position)
-                        {
-                            Node neigboringNode = totalNodes[gridX, gridY];
-                            float newStartCostScore = currentNode.startCost + Vector2.Distance(currentNode.position, neigboringNode.position);
-                            neigboringNode.targetDistance = Vector2.Distance(neigboringNode.position, target);
-                            if (newStartCostScore < neigboringNode.startCost)
-                            {
-                                neigboringNode.parent = currentNode;
-                                
-                                neigboringNode.startCost = newStartCostScore;
-                                neigboringNode.totalCost = neigboringNode.startCost + neigboringNode.targetDistance;
-                                if (!OpenNodes.Contains(neigboringNode))
-                                {
-                                    OpenNodes.Add(neigboringNode);
-                                }
+                    {
+                        Node neigboringNode = totalNodes[gridX, gridY];
 
+                        float newStartCostScore = currentNode.startCost + Vector2.Distance(currentNode.position, neigboringNode.position);
+                        neigboringNode.targetDistance = Vector2.Distance(neigboringNode.position, target);
+                        if (newStartCostScore < neigboringNode.startCost)
+                        {
+                            neigboringNode.parent = currentNode;
+
+                            neigboringNode.startCost = newStartCostScore;
+                            neigboringNode.totalCost = neigboringNode.startCost + neigboringNode.targetDistance;
+                            if (!OpenNodes.Contains(neigboringNode))
+                            {
+                                OpenNodes.Add(neigboringNode);
                             }
-                            totalNodes[gridX, gridY] = neigboringNode;
 
                         }
+                        totalNodes[gridX, gridY] = neigboringNode;
+
+                    }
 
                 }
             }
