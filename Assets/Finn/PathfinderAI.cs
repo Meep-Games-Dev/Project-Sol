@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static UnityEditor.PlayerSettings;
 
 public class Node
 {
@@ -20,27 +21,46 @@ public class PathfinderAI : MonoBehaviour
     public float pathResolution = 0.5f;
     public int searchAreaWidth;
     public int searchAreaHeight;
-
+    public int loopsBeforeUpdate;
+    private int loops;
     public List<Vector2> path = new List<Vector2>();
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        path = PathFind(target, searchAreaWidth, searchAreaHeight);
+        path = PathFind(target, searchAreaWidth, searchAreaHeight, gameObject);
     }
 
     // Update is called once per frame
     void Update()
     {
-        path = PathFind(target, searchAreaWidth, searchAreaHeight);
+        if(loops >= loopsBeforeUpdate)
+        {
+            loops = 0;
+            path = PathFind(target, searchAreaWidth, searchAreaHeight, gameObject);
+        }
+        if(Vector2.Distance(transform.position, path[0]) < 1)
+        {
+            List<Vector2> newPathingList = new List<Vector2>();
+            for (int j = 1; j < path.Count; j++)
+            {
+                newPathingList.Add(path[j]);
+            }
+            path = newPathingList;
+        }
+        Vector2 AIPos = new Vector2(transform.position.x, transform.position.y);
+        Vector2 moveDir = (path[0] - AIPos).normalized;
+        transform.position += (Vector3)(moveDir * Time.deltaTime);
+        float angle = Vector2.SignedAngle(Vector2.up, moveDir);
+        transform.rotation = Quaternion.Euler(0, 0, angle);
         for (int i = 1; i < path.Count; i++)
         {
             Debug.DrawLine(path[i - 1], path[i], Color.green);
         }
-
+        loops++;
     }
 
-    List<Vector2> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight)
+    List<Vector2> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight, GameObject AI)
     {
         Node startNode;
         List<Node> OpenNodes = new List<Node>();
@@ -51,11 +71,11 @@ public class PathfinderAI : MonoBehaviour
         int nodeGridWidth = Mathf.RoundToInt(searchAreaWidth / pathResolution);
         int nodeGridHeight = Mathf.RoundToInt(searchAreaHeight / pathResolution);
         Vector2 gridWorldOrigin = new Vector2(
-        transform.position.x - halfWidth,
-        transform.position.y - halfHeight
+        AI.transform.position.x - halfWidth,
+        AI.transform.position.y - halfHeight
     );
         totalNodes = new Node[nodeGridWidth,nodeGridHeight];
-        if (searchAreaWidth < Mathf.Abs(target.x - transform.position.x) || searchAreaHeight < Mathf.Abs(target.y - transform.position.y))
+        if (searchAreaWidth < Mathf.Abs(target.x - AI.transform.position.x) || searchAreaHeight < Mathf.Abs(target.y - AI.transform.position.y))
         {
             Debug.LogError("Start position is outside the defined search area bounds.");
             return null;
@@ -76,10 +96,10 @@ public class PathfinderAI : MonoBehaviour
                 totalNodes[x, y] = node;
             }
         }
-        int startX = Mathf.RoundToInt((transform.position.x - gridWorldOrigin.x) / pathResolution);
-        int startY = Mathf.RoundToInt((transform.position.y - gridWorldOrigin.y) / pathResolution);
+        int startX = Mathf.RoundToInt((AI.transform.position.x - gridWorldOrigin.x) / pathResolution);
+        int startY = Mathf.RoundToInt((AI.transform.position.y - gridWorldOrigin.y) / pathResolution);
         startNode = totalNodes[startX, startY];
-        startNode.position = transform.position;
+        startNode.position = AI.transform.position;
         startNode.startCost = 0;
         startNode.targetDistance = Vector2.Distance(startNode.position, target);
         startNode.totalCost = startNode.targetDistance;
@@ -111,7 +131,7 @@ public class PathfinderAI : MonoBehaviour
                         bool intersectingObj = false;
                         for (int j = 0; j < 7; j++)
                         {
-                            Vector2 currentBounds = gameObject.GetComponent<SpriteRenderer>().bounds.size * 0.9f;
+                            Vector2 currentBounds = AI.GetComponent<SpriteRenderer>().bounds.size * 0.9f;
                             if (Physics2D.OverlapBox(new Vector2(x,y), currentBounds, j * 45) != null)
                             {
                                 neigboringNode.startCost = Mathf.Infinity;

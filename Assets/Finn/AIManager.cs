@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
@@ -12,6 +13,7 @@ public class PathFinderAI
     public List<Vector2> path = new List<Vector2>();
     public bool targetSet = false;
     public Vector2 targetPos;
+    public int loops;
 }
 public class AIManager : MonoBehaviour
 {
@@ -19,13 +21,15 @@ public class AIManager : MonoBehaviour
     public int AINumber;
     public GameObject AIPrefab;
     public List<GameObject> targets;
+    public float pathResolution;
+    public int loopsBeforeUpdate;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         for(int i = 0; i < AINumber; i++)
         {
             PathFinderAI newAI = new PathFinderAI();
-            newAI.obj = Instantiate(AIPrefab, Vector2.zero, Quaternion.identity);
+            newAI.obj = Instantiate(AIPrefab, new Vector2(Random.Range(0,40), Random.Range(0,40)), Quaternion.identity);
             newAI.obj.name = "AI " + i;
             AIs.Add(newAI);
         }
@@ -37,6 +41,7 @@ public class AIManager : MonoBehaviour
         for(int i = 0; i < AIs.Count; i++)
         {
             PathFinderAI AI = AIs[i];
+            AI.loops++;
             Vector2 AIPos = new Vector2(AI.obj.transform.position.x, AI.obj.transform.position.y);
 
             if (Vector2.Distance(AIPos, AI.targetPos) < 1)
@@ -53,22 +58,28 @@ public class AIManager : MonoBehaviour
             }
             else
             {
+                if(AI.loops > loopsBeforeUpdate)
+                {
+                    float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
+                    float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
+                    int padding = 8;
+                    int searchAreaWidth = Mathf.Max(1, Mathf.CeilToInt(dx * 2f) + padding);
+                    int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
+                    AI.path = PathFind(AI.targetPos, searchAreaWidth, searchAreaHeight, AI.obj, pathResolution);
+                    if (AI.path == null)
+                    {
+                        Debug.LogError("AI " + i + " was unable to path to target");
+                    }
+                }
+
                 if(AI.path.Count != 0)
                 {
-                   
-                    LayerMask mask = LayerMask.GetMask("AI");
-                    //Entirely for debugging purposes, if script becomes a multithreaded script, this won't work
-                    AI.obj.GetComponent<Collider2D>().enabled = false;
-                    RaycastHit2D hit = Physics2D.Raycast(AI.obj.transform.position, (AI.targetPos - AIPos).normalized, Mathf.Infinity, mask);
-                    if (hit.collider != null)
+                    for (int j = 1; j < AI.path.Count; j++)
                     {
-                        Debug.DrawLine(AI.obj.transform.position, hit.point, Color.green);
-                        Debug.Log(AI.obj.name + " hit " + hit.collider.name + " at pos " + hit.point);
+                        Debug.DrawLine(AI.path[j - 1], AI.path[j]);
                     }
-                    AI.obj.GetComponent<Collider2D>().enabled = true;
-
                     Vector2 moveDir = (AI.path[0] - AIPos).normalized;
-                    AI.obj.transform.position += (Vector3)(moveDir * AI.velocity * Time.deltaTime);
+                    AI.obj.transform.position += (Vector3)(moveDir * Time.deltaTime);
                     float angle = Vector2.SignedAngle(Vector2.up, moveDir);
                     AI.obj.transform.rotation = Quaternion.Euler(0, 0, angle);
                     if (Vector2.Distance(AIPos, AI.path[0]) < 1)
@@ -83,10 +94,6 @@ public class AIManager : MonoBehaviour
 
                     }
                 }
-                else
-                {
-                    pathUpdate(AI);
-                }
                 if (AI.velocity < AI.maxVelocity)
                 {
                     AI.velocity += .1f;
@@ -97,94 +104,159 @@ public class AIManager : MonoBehaviour
         }
     }
 
-    public void pathUpdate(PathFinderAI AI)
+    List<Vector2> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight, GameObject AI, float pathResolution)
     {
-        AI.path = new List<Vector2>();
-        //Disableing and renabling the collider won't work if AI is multithreaded, this is a temporary solution
-        AI.obj.GetComponent<Collider2D>().enabled = false;
-        bool finishedPathing = false;
-        
-        Vector2 AIPos = new Vector2(AI.obj.transform.position.x, AI.obj.transform.position.y);
-        LayerMask mask = LayerMask.GetMask("AI");
+        // basic guards
+        if (pathResolution <= 0) pathResolution = 1f;
+        Node startNode;
+        List<Node> OpenNodes = new List<Node>();
+        Node[,] totalNodes;
+        List<Vector2> path = new List<Vector2>();
+        int halfWidth = searchAreaWidth / 2;
+        int halfHeight = searchAreaHeight / 2;
+        int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(searchAreaWidth / pathResolution));
+        int nodeGridHeight = Mathf.Max(1, Mathf.RoundToInt(searchAreaHeight / pathResolution));
+        Vector2 gridWorldOrigin = new Vector2(
+        AI.transform.position.x - halfWidth,
+        AI.transform.position.y - halfHeight
+    );
+        totalNodes = new Node[nodeGridWidth, nodeGridHeight];
 
-        //First pathing point is based off of the object
-        RaycastHit2D hit = Physics2D.Raycast(AI.obj.transform.position, (AI.targetPos-AIPos).normalized, Mathf.Infinity, mask);
-
-        if (hit.collider != null)
+        // ensure start is in bounds (recalculate origin if needed)
+        if (AI.transform.position.x < gridWorldOrigin.x || AI.transform.position.x > gridWorldOrigin.x + searchAreaWidth ||
+            AI.transform.position.y < gridWorldOrigin.y || AI.transform.position.y > gridWorldOrigin.y + searchAreaHeight)
         {
-            AI.path.Add(hit.point -= (AI.targetPos - AIPos).normalized * (AI.obj.GetComponent<SpriteRenderer>().sprite.bounds.size.y*transform.lossyScale.y));
-            RaycastHit2D leftHit = Physics2D.Raycast(AI.path[0], (AI.targetPos - AIPos).normalized + new Vector2(-1, 0).normalized, Mathf.Infinity, mask);
-            RaycastHit2D rightHit = Physics2D.Raycast(AI.path[0], (AI.targetPos - AIPos).normalized + new Vector2(1, 0).normalized, Mathf.Infinity, mask);
-            if (leftHit.collider != null)
-            {
-                if(rightHit.collider != null)
-                {
-                    AI.path.Add(AI.path[0] + new Vector2(0, -1).normalized * 5);
-                }
-                else
-                {
-                    AI.path.Add(AI.path[0] + new Vector2(1, 0).normalized);
-                }
-            }
-            else
-            {
-                AI.path.Add(AIPos + new Vector2(-1, 0).normalized);
-            }
-
-            Debug.DrawLine(AI.obj.transform.position, hit.point, Color.green);
-            Debug.Log(AI.obj.name + " hit " + hit.collider.name);
+            Debug.LogError($"Start position {AI.transform.position} is outside search area origin {gridWorldOrigin} size ({searchAreaWidth},{searchAreaHeight}). Expand search area or recenter.");
+            return null;
         }
-        else
-        {
-            finishedPathing = true;
-            AI.path.Add(AI.targetPos);
-        }
-        while (!finishedPathing)
-        {
-            int AIPathLength = AI.path.Count - 1;
-            hit = new RaycastHit2D();
-            hit = Physics2D.Raycast(AI.path[AIPathLength], (AI.targetPos - AI.path[AIPathLength]).normalized, Mathf.Infinity, mask);
 
-            if (hit.collider != null)
+        for (int x = 0; x < nodeGridWidth; x++)
+        {
+            for (int y = 0; y < nodeGridHeight; y++)
             {
-                AI.path.Add(hit.point - (AI.targetPos - AI.path[AIPathLength]).normalized * (AI.obj.GetComponent<SpriteRenderer>().sprite.bounds.size.y * transform.lossyScale.y));
-                RaycastHit2D leftHit = Physics2D.Raycast(AI.path[AIPathLength], (AI.targetPos - AI.path[AIPathLength]).normalized + new Vector2(-1, 0).normalized, Mathf.Infinity, mask);
-                RaycastHit2D rightHit = Physics2D.Raycast(AI.path[AIPathLength], (AI.targetPos - AI.path[AIPathLength]).normalized + new Vector2(1, 0).normalized, Mathf.Infinity, mask);
-                if (leftHit.collider != null)
+                Node node = new Node
                 {
-                    if (rightHit.collider != null)
+                    position = new Vector2(gridWorldOrigin.x + x * pathResolution, gridWorldOrigin.y + y * pathResolution),
+                    startCost = Mathf.Infinity,
+                    targetDistance = Mathf.Infinity,
+                    totalCost = Mathf.Infinity
+                };
+
+                totalNodes[x, y] = node;
+            }
+        }
+        int startX = Mathf.Clamp(Mathf.RoundToInt((AI.transform.position.x - gridWorldOrigin.x) / pathResolution), 0, nodeGridWidth - 1);
+        int startY = Mathf.Clamp(Mathf.RoundToInt((AI.transform.position.y - gridWorldOrigin.y) / pathResolution), 0, nodeGridHeight - 1);
+        startNode = totalNodes[startX, startY];
+        startNode.position = AI.transform.position;
+        startNode.startCost = 0;
+        startNode.targetDistance = Vector2.Distance(startNode.position, target);
+        startNode.totalCost = startNode.targetDistance;
+        OpenNodes.Add(startNode);
+        object[] totalObjs = FindObjectsByType(typeof(SpriteRenderer), FindObjectsSortMode.None);
+        Node targetNode = null;
+
+        // prepare obstacle mask (use "Obstacles" layer if exists, otherwise use all layers)
+        int obstacleMask = LayerMask.GetMask("Obstacles");
+        if (obstacleMask == 0) obstacleMask = ~0;
+
+        // temporarily disable AI collider to avoid self-blocking
+        Collider2D aiCollider = AI.GetComponent<Collider2D>();
+        bool aiColliderWasEnabled = false;
+        if (aiCollider != null)
+        {
+            aiColliderWasEnabled = aiCollider.enabled;
+            aiCollider.enabled = false;
+        }
+
+        while (OpenNodes.Count > 0)
+        {
+            Node currentNode = OpenNodes.Aggregate((prev, current) => current.totalCost < prev.totalCost ? current : prev);
+
+            // If close enough to target we are done
+            if (Vector2.Distance(currentNode.position, target) < pathResolution * 0.6f)
+            {
+                targetNode = currentNode;
+                break;
+            }
+
+            // get current node indices
+            int currentNodeGridX = Mathf.Clamp(Mathf.RoundToInt((currentNode.position.x - gridWorldOrigin.x) / pathResolution), 0, nodeGridWidth - 1);
+            int currentNodeGridY = Mathf.Clamp(Mathf.RoundToInt((currentNode.position.y - gridWorldOrigin.y) / pathResolution), 0, nodeGridHeight - 1);
+
+            // iterate neighbors using grid offsets (avoids floating rounding issues)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+
+                    int gridX = currentNodeGridX + dx;
+                    int gridY = currentNodeGridY + dy;
+
+                    if (gridX < 0 || gridX >= nodeGridWidth || gridY < 0 || gridY >= nodeGridHeight)
+                        continue;
+
+                    Node neighboringNode = totalNodes[gridX, gridY];
+                    Vector2 neighborPos = neighboringNode.position;
+
+                    // Use a small overlap test at the neighbor position to detect obstacles.
+                    // OverlapCircle is simpler and robust for grid-based checks.
+                    float checkRadius = Mathf.Max(0.1f, pathResolution * 0.45f);
+                    Collider2D hit = Physics2D.OverlapCircle(neighborPos, checkRadius, obstacleMask);
+
+                    if (hit != null)
                     {
-                        AI.path.Add(AI.path[AIPathLength] + new Vector2(0, -1).normalized * 5);
+                        // blocked by obstacle
+                        neighboringNode.startCost = Mathf.Infinity;
+                        neighboringNode.targetDistance = Mathf.Infinity;
+                        neighboringNode.totalCost = Mathf.Infinity;
+                        totalNodes[gridX, gridY] = neighboringNode;
+                        // optional debug:
+                        // Debug.DrawLine(neighborPos - Vector2.one*checkRadius, neighborPos + Vector2.one*checkRadius, Color.red, 1f);
+                        continue;
                     }
-                    else
-                    {
-                        AI.path.Add(AI.path[AIPathLength] + new Vector2(1, 0).normalized);
-                    }
-                }
-                else
-                {
-                    AI.path.Add(AIPos + new Vector2(-1, 0).normalized);
-                }
 
-                Debug.DrawLine(AI.obj.transform.position, hit.point, Color.green);
-                Debug.Log(AI.obj.name + " hit " + hit.collider.name);
+                    float newStartCostScore = currentNode.startCost + Vector2.Distance(currentNode.position, neighboringNode.position);
+                    neighboringNode.targetDistance = Vector2.Distance(neighboringNode.position, target);
+                    if (newStartCostScore < neighboringNode.startCost)
+                    {
+                        neighboringNode.parent = currentNode;
+                        neighboringNode.startCost = newStartCostScore;
+                        neighboringNode.totalCost = neighboringNode.startCost + neighboringNode.targetDistance;
+                        if (!OpenNodes.Contains(neighboringNode))
+                        {
+                            OpenNodes.Add(neighboringNode);
+                        }
+                    }
+                    totalNodes[gridX, gridY] = neighboringNode;
+                }
             }
-            else
-            {
-                finishedPathing = true;
-            }
+
+            OpenNodes.Remove(currentNode);
+            currentNode.evaluated = true;
         }
 
-        Debug.Log("Path updated");
-        AI.obj.GetComponent<Collider2D>().enabled = true;
-    }
+        // restore AI collider
+        if (aiCollider != null)
+        {
+            aiCollider.enabled = aiColliderWasEnabled;
+        }
 
-    public Vector2 GetVector2Dir(float dirCW)
-    {
-        float radians = dirCW * Mathf.Deg2Rad;
-        float xComponent = Mathf.Cos(radians);
-        float yComponent = Mathf.Sin(radians);
-        Vector2 directionV2 = new Vector2(xComponent, yComponent);
-        return directionV2.normalized;
+        if (targetNode == null)
+        {
+            Debug.LogWarning("No path found to the target. Possible causes: search area too small, obstacles block the route, or pathResolution is too large.");
+            return null;
+        }
+
+        Node pathNode = targetNode;
+        while (pathNode != null)
+        {
+            path.Add(pathNode.position);
+            pathNode = pathNode.parent;
+        }
+        Debug.Log("Path found");
+        path.Reverse();
+        return path;
     }
 }
