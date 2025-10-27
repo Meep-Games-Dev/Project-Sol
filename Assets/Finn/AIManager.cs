@@ -7,7 +7,7 @@ public class PathFinderAI
     public GameObject obj;
     public float velocity;
     public float maxVelocity = 5f;
-    public List<Vector2> path = new List<Vector2>();
+    public List<Node> path = new List<Node>();
     public bool targetSet = false;
     public Vector2 targetPos;
     public int loops;
@@ -46,7 +46,7 @@ public class AIManager : MonoBehaviour
             {
                 Debug.Log("Target Reached!");
                 AI.targetSet = false;
-                AI.path = new List<Vector2>();
+                AI.path = new List<Node>();
             }
             if (AI.targetSet == false)
             {
@@ -70,29 +70,28 @@ public class AIManager : MonoBehaviour
 
                     if (AI.path == null)
                     {
-                        Debug.LogError("AI " + i + " was unable to path to target");
+                        //Debug.LogError("AI " + i + " was unable to path to target");
                     }
                 }
 
                 if (AI.path != null)
                 {
-                    Vector2 nextNode = AI.path[0];
-                    Vector2 currentPos = AI.obj.transform.position;
+
                     for (int j = 1; j < AI.path.Count; j++)
                     {
-                        Debug.DrawLine(AI.path[j - 1], AI.path[j]);
+                        Debug.DrawLine(AI.path[j - 1].position, AI.path[j].position);
                     }
-                    Vector2 moveDir = (nextNode - currentPos).normalized;
+                    Vector2 moveDir = AI.path[0].dir;
                     //Debug.Log("Moved AI " + i + " from position " + AIPos + " to position " + (AI.obj.transform.position + (Vector3)(moveDir * AISpeed * Time.deltaTime)) + ". AI Move Direction is " + moveDir + ". Current AI Path node is at " + AI.path[0] + ". AI Distance from Node is " + Vector2.Distance(AIPos, AI.path[0]));
                     //AI.obj.transform.position += (Vector3)(moveDir * AISpeed * Time.deltaTime);
                     float angle = Vector2.SignedAngle(Vector2.up, moveDir);
                     AI.obj.transform.eulerAngles = new Vector3(0, 0, angle);
                     Debug.Log(AI.obj.transform.position);
-                    AI.obj.transform.Translate(AI.obj.transform.up * AISpeed * Time.deltaTime, Space.World);
+                    AI.obj.transform.Translate(moveDir * AISpeed * Time.deltaTime, Space.World);
                     //AI.obj.transform.position = Vector2.MoveTowards(AI.obj.transform.position, nextNode, AISpeed * Time.deltaTime);
 
 
-                    if (Vector2.Distance(AI.obj.transform.position, nextNode) < 0.1f)
+                    if (Vector2.Distance(AI.obj.transform.position, AI.path[0].position) < 0.1f)
                     {
                         Debug.Log(AI.path.Count);
                         AI.path.RemoveAt(0);
@@ -105,14 +104,14 @@ public class AIManager : MonoBehaviour
 
     }
 
-    List<Vector2> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight, GameObject AI, float pathResolution)
+    List<Node> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight, GameObject AI, float pathResolution)
     {
         // basic guards
         if (pathResolution <= 0) pathResolution = 1f;
         Node startNode;
         List<Node> OpenNodes = new List<Node>();
         Node[,] totalNodes;
-        List<Vector2> path = new List<Vector2>();
+        List<Node> path = new List<Node>();
         int halfWidth = searchAreaWidth / 2;
         int halfHeight = searchAreaHeight / 2;
         int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(searchAreaWidth / pathResolution));
@@ -251,10 +250,16 @@ public class AIManager : MonoBehaviour
         }
 
         Node pathNode = targetNode;
+        int i = 0;
         while (pathNode != null)
         {
-            path.Add(pathNode.position);
+            if(pathNode.parent != null)
+            {
+                pathNode.dir = (pathNode.parent.position - pathNode.position).normalized;
+            }
+            path.Add(pathNode);
             pathNode = pathNode.parent;
+            i++;
         }
         Debug.Log("Path found");
         path.Reverse();

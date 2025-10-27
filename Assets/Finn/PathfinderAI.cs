@@ -11,6 +11,7 @@ public class Node
     public float totalCost;
     public bool evaluated;
     public Node parent;
+    public Vector2 dir;
 }
 
 public class PathfinderAI : MonoBehaviour
