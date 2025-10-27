@@ -23,6 +23,7 @@ public class AIManager : MonoBehaviour
     public List<GameObject> targets;
     public float pathResolution;
     public int loopsBeforeUpdate;
+    public float AISpeed;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -44,13 +45,13 @@ public class AIManager : MonoBehaviour
             AI.loops++;
             Vector2 AIPos = new Vector2(AI.obj.transform.position.x, AI.obj.transform.position.y);
 
-            if (Vector2.Distance(AIPos, AI.targetPos) < 1)
+            if (Vector2.Distance(AI.obj.transform.position, AI.targetPos) < 1)
             {
                 Debug.Log("Target Reached!");
                 AI.targetSet = false;
                 AI.path = new List<Vector2>();
             }
-            if(AI.targetSet == false)
+            if (AI.targetSet == false)
             {
                 Debug.Log("AI " + i + " is pathing to a target");
                 AI.targetPos = targets[Mathf.RoundToInt(Random.Range(0, targets.Count))].transform.position;
@@ -60,12 +61,16 @@ public class AIManager : MonoBehaviour
             {
                 if(AI.loops > loopsBeforeUpdate)
                 {
+                    AI.loops = 0;
                     float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
                     float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
                     int padding = 8;
                     int searchAreaWidth = Mathf.Max(1, Mathf.CeilToInt(dx * 2f) + padding);
                     int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
-                    AI.path = PathFind(AI.targetPos, searchAreaWidth, searchAreaHeight, AI.obj, pathResolution);
+                    //AI.path = PathFind(AI.targetPos, searchAreaWidth, searchAreaHeight, AI.obj, pathResolution);
+                    AI.path.Add(AI.obj.transform.position);
+                    AI.path.Add(AI.targetPos);
+
                     if (AI.path == null)
                     {
                         Debug.LogError("AI " + i + " was unable to path to target");
@@ -74,34 +79,32 @@ public class AIManager : MonoBehaviour
 
                 if(AI.path.Count != 0)
                 {
+                    Vector2 nextNode = AI.path[0];
+                    Vector2 currentPos = AI.obj.transform.position;
                     for (int j = 1; j < AI.path.Count; j++)
                     {
                         Debug.DrawLine(AI.path[j - 1], AI.path[j]);
                     }
-                    Vector2 moveDir = (AI.path[0] - AIPos).normalized;
-                    AI.obj.transform.position += (Vector3)(moveDir * Time.deltaTime);
+                    Vector2 moveDir = (nextNode - currentPos).normalized;
+                    //Debug.Log("Moved AI " + i + " from position " + AIPos + " to position " + (AI.obj.transform.position + (Vector3)(moveDir * AISpeed * Time.deltaTime)) + ". AI Move Direction is " + moveDir + ". Current AI Path node is at " + AI.path[0] + ". AI Distance from Node is " + Vector2.Distance(AIPos, AI.path[0]));
+                    //AI.obj.transform.position += (Vector3)(moveDir * AISpeed * Time.deltaTime);
+                    Debug.Log(AI.obj.transform.position);
+                    AI.obj.transform.Translate(moveDir * AISpeed * Time.deltaTime);
+                    //AI.obj.transform.position = Vector2.MoveTowards(AI.obj.transform.position, nextNode, AISpeed * Time.deltaTime);
                     float angle = Vector2.SignedAngle(Vector2.up, moveDir);
-                    AI.obj.transform.rotation = Quaternion.Euler(0, 0, angle);
-                    if (Vector2.Distance(AIPos, AI.path[0]) < 1)
+                    AI.obj.transform.eulerAngles = new Vector3(0, 0, angle);
+
+                    if (Vector2.Distance(AI.obj.transform.position, nextNode) < 0.1f)
                     {
-
-                        List<Vector2> newPathingList = new List<Vector2>();
-                        for (int j = 1; j < AI.path.Count; j++)
-                        {
-                            newPathingList.Add(AI.path[j]);
-                        }
-                        AI.path = newPathingList;
-
+                        Debug.Log(AI.path.Count);
+                        AI.path.RemoveAt(0);
+                        //Debug.Log("rebuilt list");
                     }
                 }
-                if (AI.velocity < AI.maxVelocity)
-                {
-                    AI.velocity += .1f;
-                }
             }
-
-            AI.velocity -= .05f;
+            AIs[i] = AI;
         }
+
     }
 
     List<Vector2> PathFind(Vector2 target, int searchAreaWidth, int searchAreaHeight, GameObject AI, float pathResolution)
