@@ -42,7 +42,7 @@ public class AIManager : MonoBehaviour
             AI.loops++;
             Vector2 AIPos = new Vector2(AI.obj.transform.position.x, AI.obj.transform.position.y);
 
-            if (Vector2.Distance(AI.obj.transform.position, AI.targetPos) < 1)
+            if (Vector2.Distance(AI.obj.transform.position, AI.targetPos) < 1f)
             {
                 Debug.Log("Target Reached!");
                 AI.targetSet = false;
@@ -56,14 +56,16 @@ public class AIManager : MonoBehaviour
             }
             else
             {
+                float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
+                float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
+                int padding = 8;
+                int searchAreaWidth = Mathf.Max(1, Mathf.CeilToInt(dx * 2f) + padding);
+                int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
+                DrawRectangle(AI.obj.transform.position, new Vector2(searchAreaWidth, searchAreaHeight), Color.green);
+                DrawRectangle(AI.targetPos, new Vector2(2, 2), Color.red);
                 if (AI.loops > loopsBeforeUpdate)
                 {
                     AI.loops = 0;
-                    float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
-                    float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
-                    int padding = 8;
-                    int searchAreaWidth = Mathf.Max(1, Mathf.CeilToInt(dx * 2f) + padding);
-                    int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
                     AI.path = PathFind(AI.targetPos, searchAreaWidth, searchAreaHeight, AI.obj, pathResolution);
                     //AI.path.Add(AI.obj.transform.position);
                     //AI.path.Add(AI.targetPos);
@@ -74,7 +76,7 @@ public class AIManager : MonoBehaviour
                     }
                 }
 
-                if (AI.path != null)
+                if (AI.path != null && AI.path.Count > 0)
                 {
 
                     for (int j = 1; j < AI.path.Count; j++)
@@ -84,10 +86,11 @@ public class AIManager : MonoBehaviour
                     Vector2 moveDir = AI.path[0].dir;
                     //Debug.Log("Moved AI " + i + " from position " + AIPos + " to position " + (AI.obj.transform.position + (Vector3)(moveDir * AISpeed * Time.deltaTime)) + ". AI Move Direction is " + moveDir + ". Current AI Path node is at " + AI.path[0] + ". AI Distance from Node is " + Vector2.Distance(AIPos, AI.path[0]));
                     //AI.obj.transform.position += (Vector3)(moveDir * AISpeed * Time.deltaTime);
-                    float angle = Vector2.SignedAngle(Vector2.up, moveDir);
-                    AI.obj.transform.eulerAngles = new Vector3(0, 0, angle);
+                    AI.obj.transform.position = Vector2.MoveTowards(AI.obj.transform.position, AI.path[0].position, AISpeed * Time.deltaTime);
+                    //float angle = Vector2.SignedAngle(Vector2.down, moveDir);
+                    //AI.obj.transform.eulerAngles = new Vector3(0, 0, angle);
                     Debug.Log(AI.obj.transform.position);
-                    AI.obj.transform.Translate(moveDir * AISpeed * Time.deltaTime, Space.World);
+                    //AI.obj.transform.Translate(moveDir * AISpeed * Time.deltaTime, Space.World);
                     //AI.obj.transform.position = Vector2.MoveTowards(AI.obj.transform.position, nextNode, AISpeed * Time.deltaTime);
 
 
@@ -116,10 +119,7 @@ public class AIManager : MonoBehaviour
         int halfHeight = searchAreaHeight / 2;
         int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(searchAreaWidth / pathResolution));
         int nodeGridHeight = Mathf.Max(1, Mathf.RoundToInt(searchAreaHeight / pathResolution));
-        Vector2 gridWorldOrigin = new Vector2(
-        AI.transform.position.x - halfWidth,
-        AI.transform.position.y - halfHeight
-    );
+        Vector2 gridWorldOrigin = new Vector2(AI.transform.position.x - halfWidth, AI.transform.position.y - halfHeight);
         totalNodes = new Node[nodeGridWidth, nodeGridHeight];
 
         // ensure start is in bounds (recalculate origin if needed)
@@ -129,7 +129,6 @@ public class AIManager : MonoBehaviour
             Debug.LogError($"Start position {AI.transform.position} is outside search area origin {gridWorldOrigin} size ({searchAreaWidth},{searchAreaHeight}). Expand search area or recenter.");
             return null;
         }
-
         for (int x = 0; x < nodeGridWidth; x++)
         {
             for (int y = 0; y < nodeGridHeight; y++)
@@ -139,7 +138,9 @@ public class AIManager : MonoBehaviour
                     position = new Vector2(gridWorldOrigin.x + x * pathResolution, gridWorldOrigin.y + y * pathResolution),
                     startCost = Mathf.Infinity,
                     targetDistance = Mathf.Infinity,
-                    totalCost = Mathf.Infinity
+                    totalCost = Mathf.Infinity,
+                    parent = null,
+                    evaluated = false
                 };
 
                 totalNodes[x, y] = node;
@@ -153,7 +154,6 @@ public class AIManager : MonoBehaviour
         startNode.targetDistance = Vector2.Distance(startNode.position, target);
         startNode.totalCost = startNode.targetDistance;
         OpenNodes.Add(startNode);
-        object[] totalObjs = FindObjectsByType(typeof(SpriteRenderer), FindObjectsSortMode.None);
         Node targetNode = null;
 
         // prepare obstacle mask (use "Obstacles" layer if exists, otherwise use all layers)
@@ -174,7 +174,7 @@ public class AIManager : MonoBehaviour
             Node currentNode = OpenNodes.Aggregate((prev, current) => current.totalCost < prev.totalCost ? current : prev);
 
             // If close enough to target we are done
-            if (Vector2.Distance(currentNode.position, target) < pathResolution * 0.6f)
+            if (Vector2.Distance(currentNode.position, target) < pathResolution * 0.9f)
             {
                 targetNode = currentNode;
                 break;
@@ -189,33 +189,44 @@ public class AIManager : MonoBehaviour
             {
                 for (int dy = -1; dy <= 1; dy++)
                 {
-                    if (dx == 0 && dy == 0) continue;
+                    if (dx == 0 && dy == 0)
+                    {
+                        continue;
+                    }
 
                     int gridX = currentNodeGridX + dx;
                     int gridY = currentNodeGridY + dy;
 
                     if (gridX < 0 || gridX >= nodeGridWidth || gridY < 0 || gridY >= nodeGridHeight)
+                    {
                         continue;
+                    }
+
 
                     Node neighboringNode = totalNodes[gridX, gridY];
                     Vector2 neighborPos = neighboringNode.position;
+                    bool hitObj = false;
+                    float sizeX = AI.GetComponent<Renderer>().localBounds.size.x * AI.transform.localScale.x;
+                    float sizeY = AI.GetComponent<Renderer>().localBounds.size.y * AI.transform.localScale.y;
 
-                    // Use a small overlap test at the neighbor position to detect obstacles.
-                    // OverlapCircle is simpler and robust for grid-based checks.
-                    float checkRadius = Mathf.Max(0.1f, pathResolution * 0.45f);
-                    Collider2D hit = Physics2D.OverlapCircle(neighborPos, checkRadius, obstacleMask);
-
-                    if (hit != null)
+                    for (int j = 0; j < 7; j++)
                     {
-                        // blocked by obstacle
+                        Collider2D hit = Physics2D.OverlapBox(neighboringNode.position, new Vector2(sizeX, sizeY), j * 45);
+                        if (hit != null)
+                        {
+                            hitObj = true;
+                            break;
+                        }
+                    }
+                    if (hitObj == true)
+                    {
                         neighboringNode.startCost = Mathf.Infinity;
                         neighboringNode.targetDistance = Mathf.Infinity;
                         neighboringNode.totalCost = Mathf.Infinity;
                         totalNodes[gridX, gridY] = neighboringNode;
-                        // optional debug:
-                        // Debug.DrawLine(neighborPos - Vector2.one*checkRadius, neighborPos + Vector2.one*checkRadius, Color.red, 1f);
                         continue;
                     }
+
 
                     float newStartCostScore = currentNode.startCost + Vector2.Distance(currentNode.position, neighboringNode.position);
                     neighboringNode.targetDistance = Vector2.Distance(neighboringNode.position, target);
@@ -253,9 +264,13 @@ public class AIManager : MonoBehaviour
         int i = 0;
         while (pathNode != null)
         {
-            if(pathNode.parent != null)
+            if (pathNode.parent != null)
             {
                 pathNode.dir = (pathNode.parent.position - pathNode.position).normalized;
+            }
+            else
+            {
+                pathNode.dir = new Vector2(0, 0);
             }
             path.Add(pathNode);
             pathNode = pathNode.parent;
@@ -264,5 +279,22 @@ public class AIManager : MonoBehaviour
         Debug.Log("Path found");
         path.Reverse();
         return path;
+    }
+    public static void DrawRectangle(Vector3 position, Vector2 extent, Color color)
+    {
+        // Calculate the four corner points relative to the center
+        Vector3 rightOffset = Vector3.right * extent.x;
+        Vector3 upOffset = Vector3.up * extent.y;
+
+        Vector3 p1 = position + rightOffset + upOffset;  // Top-Right
+        Vector3 p2 = position - rightOffset + upOffset;  // Top-Left
+        Vector3 p3 = position - rightOffset - upOffset;  // Bottom-Left
+        Vector3 p4 = position + rightOffset - upOffset;  // Bottom-Right
+
+        // Draw the four lines connecting the corners
+        Debug.DrawLine(p1, p2, color); // Top
+        Debug.DrawLine(p2, p3, color); // Left
+        Debug.DrawLine(p3, p4, color); // Bottom
+        Debug.DrawLine(p4, p1, color); // Right
     }
 }
