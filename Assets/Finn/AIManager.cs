@@ -70,36 +70,38 @@ public class AIManager : MonoBehaviour
                 //Debug.Log("AI " + i + " is pathing to a target");
                 AI.targetPos = targets[Mathf.RoundToInt(Random.Range(0, targets.Count))].transform.position;
                 AI.targetSet = true;
+                AI.currentlyRunningObstacleMapTask = false;
+                AI.currentObstacleMapTask = null;
             }
             else
             {
-                float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
-                float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
-                int padding = 8;
-                int searchAreaWidth = Mathf.Max(1, Mathf.CeilToInt(dx * 2f) + padding);
-                int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
-                int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(searchAreaWidth / pathResolution));
-                int nodeGridHeight = Mathf.Max(1, Mathf.RoundToInt(searchAreaHeight / pathResolution));
-
-                if (!AI.currentlyRunningObstacleMapTask)
+                if (AI.path == null || AI.path.Count == 0 || loopsBeforeUpdate < 1 || AI.currentlyRunningObstacleMapTask)
                 {
-                    AI.currentlyRunningObstacleMapTask = true;
-                    AI.currentObstacleMapTask = BeginObstacleDetection(AIPos, searchAreaWidth, searchAreaHeight, AI, pathResolution);
-                }
-                else if (AI.currentObstacleMapTask != null && AI.currentObstacleMapTask.IsCompleted)
-                {
+                    float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
+                    float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
+                    int padding = 8;
+                    int searchAreaWidth = Mathf.Max(1, Mathf.CeilToInt(dx * 2f) + padding);
+                    int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
+                    int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(searchAreaWidth / pathResolution));
+                    int nodeGridHeight = Mathf.Max(1, Mathf.RoundToInt(searchAreaHeight / pathResolution));
 
-
-                    AStar.PathRequestData pathData = new AStar.PathRequestData();
-                    pathData.startPos = AIPos;
-                    pathData.targetPos = AI.targetPos;
-                    pathData.searchWidth = searchAreaWidth;
-                    pathData.searchHeight = searchAreaHeight;
-                    pathData.pathResolution = pathResolution;
-                    pathData.AIPos = AIPos;
-                    pathData.obstacleMap = AI.currentObstacleMapTask.Result;
-                    if (AI.path == null || AI.path.Count == 0)
+                    if (!AI.currentlyRunningObstacleMapTask)
                     {
+                        AI.currentlyRunningObstacleMapTask = true;
+                        AI.currentObstacleMapTask = BeginObstacleDetection(AIPos, searchAreaWidth, searchAreaHeight, AI, pathResolution);
+                    }
+                    else if (AI.currentObstacleMapTask != null && AI.currentObstacleMapTask.IsCompleted)
+                    {
+
+
+                        AStar.PathRequestData pathData = new AStar.PathRequestData();
+                        pathData.startPos = AIPos;
+                        pathData.targetPos = AI.targetPos;
+                        pathData.searchWidth = searchAreaWidth;
+                        pathData.searchHeight = searchAreaHeight;
+                        pathData.pathResolution = pathResolution;
+                        pathData.AIPos = AIPos;
+                        pathData.obstacleMap = AI.currentObstacleMapTask.Result;
                         PathRequest request = new PathRequest
                         {
                             AI = AI,
@@ -108,22 +110,13 @@ public class AIManager : MonoBehaviour
 
                         activePathRequests.Add(request);
                         //AI.path = PathFind(AI.targetPos, searchAreaWidth, searchAreaHeight, AI.obj, pathResolution);
-                    }
-                    else if (AI.loops > loopsBeforeUpdate)
-                    {
-                        AI.loops = 0;
-                        PathRequest request = new PathRequest
-                        {
-                            AI = AI,
-                            PathfindingTask = Task.Run(() => AStar.FindPathAStar(pathData))
-                        };
 
-                        activePathRequests.Add(request);
-                    }
-                    AI.currentObstacleMapTask = null;
-                    AI.currentlyRunningObstacleMapTask = false;
+                        AI.currentObstacleMapTask = null;
+                        AI.currentlyRunningObstacleMapTask = false;
 
+                    }
                 }
+
 
 
 
