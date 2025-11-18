@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PathRequest
@@ -27,6 +28,7 @@ public class PathFinderAI
     public bool currentlyInAITask;
     public AIPathFindingData pathData = new AIPathFindingData();
     public int instanceID;
+    public Task<bool[,]> obstacleReturn;
 }
 public class AIPathFindingData
 {
@@ -54,9 +56,11 @@ public class AIManager : MonoBehaviour
     private bool currentlyRunningObstacleMapTask;
     public Task<List<ObstacleMapReturn>> currentObstacleMapTask;
     public List<PathFinderAI> AIsWaitingForTask = new List<PathFinderAI>();
+    ObstacleManager obstacleManager;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
+        obstacleManager = FindFirstObjectByType(typeof(ObstacleManager)).GetComponent<ObstacleManager>();
         for (int i = 0; i < AINumber; i++)
         {
             PathFinderAI newAI = new PathFinderAI();
@@ -72,6 +76,7 @@ public class AIManager : MonoBehaviour
     {
         ProcessCompletedRequests();
         ProcessCompletedObstacleMapRequests();
+        List<Obstacle> obstacles = obstacleManager.GetObstaclesInScene();
         if (!currentlyRunningObstacleMapTask && AIsWaitingForTask.Count > 0)
         {
             currentObstacleMapTask = BeginObstacleDetection(AIsWaitingForTask);
@@ -102,9 +107,9 @@ public class AIManager : MonoBehaviour
             else
             {
 
-                if ((AI.loops > loopsBeforeUpdate || AI.path.Count == 0 || AI.path == null) && !AIsWaitingForTask.Contains(AI))
+                if ((AI.loops > loopsBeforeUpdate || AI.path.Count == 0 || AI.path == null) && AI.obstacleReturn != null)
                 {
-                    AIsWaitingForTask.Add(AI);
+
                     float dx = Mathf.Abs(AI.targetPos.x - AIPos.x);
                     float dy = Mathf.Abs(AI.targetPos.y - AIPos.y);
                     int padding = 16;
@@ -112,12 +117,26 @@ public class AIManager : MonoBehaviour
                     int searchAreaHeight = Mathf.Max(1, Mathf.CeilToInt(dy * 2f) + padding);
                     int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(searchAreaWidth / pathResolution));
                     int nodeGridHeight = Mathf.Max(1, Mathf.RoundToInt(searchAreaHeight / pathResolution));
+                    AI.obstacleReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(searchAreaWidth, searchAreaHeight), obstacles, DetectObstaclesInPosition.SetupObstacle(AI.obj), pathResolution));
                     AIs[i].pathData.mapOrigin = AIPos;
                     AIs[i].pathData.pathResolution = pathResolution;
                     AIs[i].pathData.mapWidth = searchAreaWidth;
                     AIs[i].pathData.mapHeight = searchAreaHeight;
                     AI.currentlyInAITask = true;
                     AI.loops = 0;
+                }
+                if (AI.obstacleReturn.Status == TaskStatus.RanToCompletion)
+                {
+                    AStar.PathRequestData pathData = new AStar.PathRequestData
+                    {
+                        AIPos = AI.pathData.mapOrigin,
+                        obstacleMap = AI.obstacleReturn.Result,
+                        pathResolution = pathResolution,
+                        searchHeight = AI.pathData.mapHeight,
+                        searchWidth = AI.pathData.mapWidth,
+                        targetPos = AI.targetPos
+                    };
+                    activePathRequests.Add(request);
                 }
                 //if (AI.currentlyInAITask)
                 //{

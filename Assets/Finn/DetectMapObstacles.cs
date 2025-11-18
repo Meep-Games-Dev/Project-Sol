@@ -33,7 +33,7 @@ public class DetectMapObstacles : MonoBehaviour
         {
             ObstacleMapRequest rq = new ObstacleMapRequest
             {
-                obstacleMapReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(50, 50), obstacles, randomObst)),
+                obstacleMapReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(50, 50), obstacles, randomObst, 1)),
                 timeStarted = Time.time
             };
             mapRequests.Add(rq);
@@ -54,7 +54,7 @@ public class DetectMapObstacles : MonoBehaviour
                 Debug.Log("Task completed successfully in " + (mapRequests[i].timeCompleted - mapRequests[i].timeStarted) + " seconds");
                 ObstacleMapRequest rq = new ObstacleMapRequest
                 {
-                    obstacleMapReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(50, 50), obstacles, randomObst))
+                    obstacleMapReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(50, 50), obstacles, randomObst, 1))
                 };
                 mapRequests[i] = rq;
                 mapRequests[i].timeStarted = Time.time;
@@ -78,7 +78,23 @@ public class DetectMapObstacles : MonoBehaviour
 
 public static class DetectObstaclesInPosition
 {
+    public static void DrawRectangle(Vector3 position, Vector2 extent, Color color)
+    {
+        // Calculate the four corner points relative to the center
+        Vector3 rightOffset = Vector3.right * extent.x;
+        Vector3 upOffset = Vector3.up * extent.y;
 
+        Vector3 p1 = position + rightOffset + upOffset;  // Top-Right
+        Vector3 p2 = position - rightOffset + upOffset;  // Top-Left
+        Vector3 p3 = position - rightOffset - upOffset;  // Bottom-Left
+        Vector3 p4 = position + rightOffset - upOffset;  // Bottom-Right
+
+        // Draw the four lines connecting the corners
+        Debug.DrawLine(p1, p2, color); // Top
+        Debug.DrawLine(p2, p3, color); // Left
+        Debug.DrawLine(p3, p4, color); // Bottom
+        Debug.DrawLine(p4, p1, color); // Right
+    }
     public static Obstacle SetupObstacle(GameObject obj)
     {
         if (obj.GetComponent<Collider2D>() != null)
@@ -98,19 +114,21 @@ public static class DetectObstaclesInPosition
             return null;
         }
     }
-    public static bool[,] DetectObstacleMap(Vector2 size, List<Obstacle> obstacles, Obstacle exclude)
+    public static bool[,] DetectObstacleMap(Vector2 size, List<Obstacle> obstacles, Obstacle exclude, float pathResolution)
     {
         int halfWidth = Mathf.RoundToInt(size.x / 2);
         int halfHeight = Mathf.RoundToInt(size.y / 2);
+        int nodeGridWidth = Mathf.Max(1, Mathf.RoundToInt(size.x / pathResolution));
+        int nodeGridHeight = Mathf.Max(1, Mathf.RoundToInt(size.y / pathResolution));
         bool[,] obstacleMapReturn = new bool[(int)size.x, (int)size.y];
         Vector2 nodePosOrigin = new Vector2(exclude.position.x - halfWidth, exclude.position.y - halfHeight);
-        for (int x = 0; x < size.x; x++)
+        for (int x = 0; x < nodeGridWidth; x++)
         {
-            for (int y = 0; y < size.y; y++)
+            for (int y = 0; y < nodeGridHeight; y++)
             {
                 Vector2 nodePos = new Vector2(
-                    nodePosOrigin.x + x,
-                    nodePosOrigin.y + y
+                    nodePosOrigin.x + x * pathResolution,
+                    nodePosOrigin.y + y * pathResolution
                 );
                 if (DetectInPositionExclusive(new Vector2(nodePos.x, nodePos.y), exclude.size, exclude.instanceID, obstacles))
                 {
