@@ -3,13 +3,16 @@ using UnityEngine;
 
 public class ParrallaxTest : MonoBehaviour
 {
-    public GameObject starPrefab;
+    public List<GameObject> prefabs;
     public CameraMovement cam;
     public Vector2 camSpace;
     public List<List<GameObject>> starLayers = new List<List<GameObject>>();
     public float layerSpeedMultiplier = 1.0f;
     public Vector2 realCamSpace;
     public System.Random rnd = new System.Random();
+    public float sizeMultiplier = 1.0f;
+    public int starsPerLayer = 15;
+    public int layersNum = 5;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -18,7 +21,7 @@ public class ParrallaxTest : MonoBehaviour
         {
             float ySize = cam.cam.orthographicSize * 2f;
             float xSize = ySize * cam.cam.aspect;
-            float padding = 10f;
+            float padding = 5f;
             camSpace = new Vector2(xSize + padding, ySize + padding);
             realCamSpace = new Vector2(xSize, ySize);
         }
@@ -27,13 +30,17 @@ public class ParrallaxTest : MonoBehaviour
             Debug.LogError("Ortho Camera not detected!");
         }
         List<List<GameObject>> layers = new List<List<GameObject>>();
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < layersNum; i++)
         {
             List<GameObject> layer = new List<GameObject>();
-            for (int j = 0; j < 15; j++)
+            for (int j = 0; j < starsPerLayer; j++)
             {
-                layer.Add(Instantiate(starPrefab, new Vector2(UnityEngine.Random.Range(Mathf.RoundToInt(camPos.x - (camSpace.x / 2)), Mathf.RoundToInt(camPos.x + (camSpace.x / 2))), UnityEngine.Random.Range(Mathf.RoundToInt(camPos.y - (camSpace.y / 2)), Mathf.RoundToInt(camPos.y + (camSpace.y / 2)))), Quaternion.identity));
+                layer.Add(Instantiate(prefabs[rnd.Next(0, prefabs.Count)], new Vector2(UnityEngine.Random.Range(Mathf.RoundToInt(camPos.x - (camSpace.x / 2)), Mathf.RoundToInt(camPos.x + (camSpace.x / 2))), UnityEngine.Random.Range(Mathf.RoundToInt(camPos.y - (camSpace.y / 2)), Mathf.RoundToInt(camPos.y + (camSpace.y / 2)))), Quaternion.identity));
                 layer[j].transform.parent = cam.gameObject.transform;
+                Vector2 currentObjLocalScale = layer[j].transform.localScale;
+                layer[j].transform.localScale = new Vector2(Mathf.Clamp(currentObjLocalScale.x / (j + 1 * sizeMultiplier), 0.0001f, 1f), Mathf.Clamp(currentObjLocalScale.y / (j + 1 * sizeMultiplier), 0.0001f, 1f));
+                SpriteRenderer spriteRenderer = layer[j].GetComponent<SpriteRenderer>();
+                spriteRenderer.sortingOrder = layersNum - i;
             }
             layers.Add(layer);
         }
@@ -48,7 +55,7 @@ public class ParrallaxTest : MonoBehaviour
         {
             float ySize = cam.cam.orthographicSize * 2f;
             float xSize = ySize * cam.cam.aspect;
-            float padding = 10f;
+            float padding = 5f;
             camSpace = new Vector2(xSize + padding, ySize + padding);
             realCamSpace = new Vector2(xSize, ySize);
         }
@@ -64,11 +71,11 @@ public class ParrallaxTest : MonoBehaviour
         List<GameObject> objsToDestroy = new List<GameObject>();
         for (int i = 0; i < starLayers.Count; i++)
         {
-            float layerSpeed = (layerSpeedMultiplier * (i + 1));
+            float layerSpeed = (layerSpeedMultiplier * (starLayers.Count - i + 1));
             for (int j = 0; j < starLayers[i].Count; j++)
             {
-                starLayers[i][j].transform.Translate(speed * layerSpeed * Time.deltaTime);
-                if (!DetectObstaclesInPosition.ContainsPoint(camPos, new Vector2(camSpace.x * 2, camSpace.y * 2), starLayers[i][j].transform.position).any)
+                starLayers[i][j].transform.Translate(-speed * layerSpeed * Time.deltaTime);
+                if (!DetectObstaclesInPosition.ContainsPoint(camPos, new Vector2(camSpace.x, camSpace.y), starLayers[i][j].transform.position).any)
                 {
                     objsToDestroy.Add(starLayers[i][j]);
                 }
@@ -95,23 +102,48 @@ public class ParrallaxTest : MonoBehaviour
                     }
                     if (returnVal.s1 && returnVal.s2)
                     {
-                        if (randomNum == 0)
+                        if (randomBool)
                         {
-
+                            spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x + (camSpace.x / 2), camPos.x + camSpace.x), camPos.y - (camSpace.y / 2));
                         }
-                        spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x + (realCamSpace.x / 2), camPos.x + realCamSpace.x), UnityEngine.Random.Range(camPos.y - camSpace.y, camPos.y - (camSpace.y / 2)));
+                        else
+                        {
+                            spawnPos = new Vector2(camPos.x + (camSpace.x / 2), UnityEngine.Random.Range(camPos.y - camSpace.y, camPos.y - (camSpace.y / 2)));
+                        }
+
                     }
                     else if (returnVal.s2 && returnVal.s3)
                     {
-                        spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x - camSpace.x, camPos.x - (camSpace.x / 2)), UnityEngine.Random.Range(camPos.y - camSpace.y, camPos.y - (camSpace.y / 2)));
+                        if (randomBool)
+                        {
+                            spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x - (camSpace.x / 2), camPos.x - camSpace.x), camPos.y - (camSpace.y / 2));
+                        }
+                        else
+                        {
+                            spawnPos = new Vector2(camPos.x - (camSpace.x / 2), UnityEngine.Random.Range(camPos.y - camSpace.y, camPos.y - (camSpace.y / 2)));
+                        }
                     }
                     else if (returnVal.s3 && returnVal.s4)
                     {
-                        spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x - camSpace.x, camPos.x - (camSpace.x / 2)), UnityEngine.Random.Range(camPos.y + (camSpace.y / 2), camPos.y + camSpace.y));
+                        if (randomBool)
+                        {
+                            spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x - (camSpace.x / 2), camPos.x - camSpace.x), camPos.y + (camSpace.y / 2));
+                        }
+                        else
+                        {
+                            spawnPos = new Vector2(camPos.x - (camSpace.x / 2), UnityEngine.Random.Range(camPos.y + camSpace.y, camPos.y + (camSpace.y / 2)));
+                        }
                     }
                     else if (returnVal.s4 && returnVal.s1)
                     {
-                        spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x + (camSpace.x / 2), camPos.x + camSpace.x), UnityEngine.Random.Range(camPos.y + (camSpace.y / 2), camPos.y + camSpace.y));
+                        if (randomBool)
+                        {
+                            spawnPos = new Vector2(UnityEngine.Random.Range(camPos.x + (camSpace.x / 2), camPos.x + camSpace.x), camPos.y + (camSpace.y / 2));
+                        }
+                        else
+                        {
+                            spawnPos = new Vector2(camPos.x + (camSpace.x / 2), UnityEngine.Random.Range(camPos.y + camSpace.y, camPos.y + (camSpace.y / 2)));
+                        }
                     }
                     else
                     {
@@ -125,23 +157,27 @@ public class ParrallaxTest : MonoBehaviour
                         }
                         else
                         {
-                            spawnPos.x = UnityEngine.Random.Range(camPos.x - (camSpace.x / 2), camPos.x + (camSpace.x / 2));
+                            spawnPos.x = UnityEngine.Random.Range(camPos.x - (realCamSpace.x / 2), camPos.x + (camSpace.x / 2));
                         }
                         if (returnVal.s2)
                         {
-                            spawnPos.y = camPos.y + (camSpace.y / 2);
+                            spawnPos.y = camPos.y - (camSpace.y / 2);
                         }
                         else if (returnVal.s4)
                         {
-                            spawnPos.y = camPos.y - (camSpace.y / 2);
+                            spawnPos.y = camPos.y + (camSpace.y / 2);
                         }
                         else
                         {
                             spawnPos.y = UnityEngine.Random.Range(camPos.y - (camSpace.y / 2), camPos.y + (camSpace.y / 2));
                         }
                     }
-                    GameObject instantiatedParrallaxObj = Instantiate(starPrefab, spawnPos, Quaternion.identity);
+                    GameObject instantiatedParrallaxObj = Instantiate(prefabs[rnd.Next(0, prefabs.Count)], spawnPos, Quaternion.identity);
                     instantiatedParrallaxObj.transform.parent = cam.gameObject.transform;
+                    Vector2 currentObjLocalScale = instantiatedParrallaxObj.transform.localScale;
+                    instantiatedParrallaxObj.transform.localScale = new Vector2(Mathf.Clamp(currentObjLocalScale.x / (j + 1 * sizeMultiplier), 0.0001f, 1f), Mathf.Clamp(currentObjLocalScale.y / (j + 1 * sizeMultiplier), 0.0001f, 1f));
+                    SpriteRenderer spriteRenderer = instantiatedParrallaxObj.GetComponent<SpriteRenderer>();
+                    spriteRenderer.sortingOrder = starLayers.Count - j;
                     starLayers[j].Add(instantiatedParrallaxObj);
 
                     break;

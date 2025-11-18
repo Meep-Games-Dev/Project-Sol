@@ -36,11 +36,10 @@ public class CameraMovement : MonoBehaviour
     void Update()
     {
         Vector2 moveDir = movement.ReadValue<Vector2>();
-        if (moveDir != Vector2.zero)
+        if (rb.linearVelocity != Vector2.zero && parrallax != null)
         {
-            parrallax.Move(moveDir * cameraMoveForce);
+            parrallax.Move(rb.linearVelocity);
         }
-
         rb.AddForce(moveDir * cameraMoveForce);
     }
 }

@@ -1,5 +1,14 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEngine;
+
+public class ObstacleMapRequest
+{
+    public Task<bool[,]> obstacleMapReturn;
+    public float timeStarted;
+    public float timeCompleted;
+}
 public class Obstacle
 {
     public Vector2 position;
@@ -10,19 +19,47 @@ public class Obstacle
 
 public class DetectMapObstacles : MonoBehaviour
 {
-
+    public GameObject randomObj;
+    private Obstacle randomObst = new Obstacle();
+    public ObstacleManager obstacleManager;
+    public List<ObstacleMapRequest> mapRequests = new List<ObstacleMapRequest>();
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-
+        obstacleManager = FindFirstObjectByType(typeof(ObstacleManager)).GetComponent<ObstacleManager>();
+        randomObst = DetectObstaclesInPosition.SetupObstacle(randomObj);
+        List<Obstacle> obstacles = obstacleManager.GetObstaclesInScene();
+        for (int i = 0; i < 100; i++)
+        {
+            ObstacleMapRequest rq = new ObstacleMapRequest
+            {
+                obstacleMapReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(50, 50), obstacles, randomObst)),
+                timeStarted = Time.time
+            };
+            mapRequests.Add(rq);
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        for (int i = 0; i < 100; i++)
+        List<Obstacle> obstacles = obstacleManager.GetObstaclesInScene();
+        for (int i = 0; i < mapRequests.Count; i++)
         {
-            List<Obstacle> obstacles = ObstacleReturn();
+
+            if (mapRequests[i].obstacleMapReturn.IsCompletedSuccessfully)
+            {
+                mapRequests[i].obstacleMapReturn = null;
+                mapRequests[i].timeCompleted = Time.time;
+                Debug.Log("Task completed successfully in " + (mapRequests[i].timeCompleted - mapRequests[i].timeStarted) + " seconds");
+                ObstacleMapRequest rq = new ObstacleMapRequest
+                {
+                    obstacleMapReturn = Task.Run(() => DetectObstaclesInPosition.DetectObstacleMap(new Vector2(50, 50), obstacles, randomObst))
+                };
+                mapRequests[i] = rq;
+                mapRequests[i].timeStarted = Time.time;
+            }
+
         }
     }
 
@@ -32,11 +69,7 @@ public class DetectMapObstacles : MonoBehaviour
         Collider2D[] obstaclesWithColliders = (Collider2D[])FindObjectsByType(typeof(Collider2D), FindObjectsSortMode.None);
         for (int i = 0; i < obstaclesWithColliders.Length; i++)
         {
-            Obstacle obstacle = new Obstacle();
-            obstacle.position = obstaclesWithColliders[i].bounds.center;
-            obstacle.size = obstaclesWithColliders[i].bounds.size;
-            obstacle.name = obstaclesWithColliders[i].name;
-            obstacle.instanceID = obstaclesWithColliders[i].gameObject.GetInstanceID();
+            Obstacle obstacle = DetectObstaclesInPosition.SetupObstacle(obstaclesWithColliders[i].gameObject);
             obstacles.Add(obstacle);
         }
         return obstacles;
@@ -45,17 +78,52 @@ public class DetectMapObstacles : MonoBehaviour
 
 public static class DetectObstaclesInPosition
 {
-    //public static bool[,] DetectObstacleMap(Vector2 position, Vector2 size, List<Obstacle> obstacles)
-    //{
-    //    bool[,] obstacleMapReturn = new bool[(int)size.x, (int)size.y];
-    //    for (int x = 0; x < size.x; x++)
-    //    {
-    //        for (int y = 0; y < size.y; y++)
-    //        {
-    //            if (DetectInPositionExclusive(new Vector2(x, y))
-    //        }
-    //    }
-    //}
+
+    public static Obstacle SetupObstacle(GameObject obj)
+    {
+        if (obj.GetComponent<Collider2D>() != null)
+        {
+            Obstacle returnObstacle = new Obstacle
+            {
+                position = obj.transform.position,
+                size = obj.GetComponent<Collider2D>().bounds.size,
+                name = obj.name,
+                instanceID = obj.GetInstanceID()
+            };
+            return returnObstacle;
+        }
+        else
+        {
+            Debug.LogError("ERR: OBJ " + obj.name + " DOES NOT INCLUDE A COLLIDER, PLEASE ADD ONE!");
+            return null;
+        }
+    }
+    public static bool[,] DetectObstacleMap(Vector2 size, List<Obstacle> obstacles, Obstacle exclude)
+    {
+        int halfWidth = Mathf.RoundToInt(size.x / 2);
+        int halfHeight = Mathf.RoundToInt(size.y / 2);
+        bool[,] obstacleMapReturn = new bool[(int)size.x, (int)size.y];
+        Vector2 nodePosOrigin = new Vector2(exclude.position.x - halfWidth, exclude.position.y - halfHeight);
+        for (int x = 0; x < size.x; x++)
+        {
+            for (int y = 0; y < size.y; y++)
+            {
+                Vector2 nodePos = new Vector2(
+                    nodePosOrigin.x + x,
+                    nodePosOrigin.y + y
+                );
+                if (DetectInPositionExclusive(new Vector2(nodePos.x, nodePos.y), exclude.size, exclude.instanceID, obstacles))
+                {
+                    obstacleMapReturn[x, y] = true;
+                }
+                else
+                {
+                    obstacleMapReturn[x, y] = false;
+                }
+            }
+        }
+        return obstacleMapReturn;
+    }
     public class ContainsPointReturn
     {
         //Left

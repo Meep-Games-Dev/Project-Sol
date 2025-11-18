@@ -225,7 +225,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &496435341
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,6 +278,7 @@ GameObject:
   - component: {fileID: 519420034}
   - component: {fileID: 519420033}
   - component: {fileID: 519420035}
+  - component: {fileID: 519420036}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -347,7 +348,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -448,6 +449,8 @@ MonoBehaviour:
   rb: {fileID: 0}
   cameraMoveForce: 10
   cameraRBMaxSpeed: 5
+  cam: {fileID: 519420031}
+  parrallax: {fileID: 519420036}
 --- !u!50 &519420035
 Rigidbody2D:
   serializedVersion: 5
@@ -475,6 +478,28 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &519420036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e09514837f6b2e41a23afc770acda97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParrallaxTest
+  prefabs:
+  - {fileID: 4123775239780363436, guid: 26bf08b34c4eb684b9bfc7dbe3ea7621, type: 3}
+  - {fileID: 4123775239780363436, guid: 8173fb8a4166d164aae2d3d440f8f50b, type: 3}
+  cam: {fileID: 519420034}
+  camSpace: {x: 0, y: 0}
+  layerSpeedMultiplier: 1
+  realCamSpace: {x: 0, y: 0}
+  sizeMultiplier: 1
+  starsPerLayer: 15
+  layersNum: 5
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0

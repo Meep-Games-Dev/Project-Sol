@@ -153,10 +153,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e09514837f6b2e41a23afc770acda97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParrallaxTest
-  starPrefab: {fileID: 4123775239780363436, guid: 26bf08b34c4eb684b9bfc7dbe3ea7621, type: 3}
+  prefabs:
+  - {fileID: 4123775239780363436, guid: 26bf08b34c4eb684b9bfc7dbe3ea7621, type: 3}
+  - {fileID: 4123775239780363436, guid: 8173fb8a4166d164aae2d3d440f8f50b, type: 3}
   cam: {fileID: 464364740}
   camSpace: {x: 0, y: 0}
   layerSpeedMultiplier: 1
+  realCamSpace: {x: 0, y: 0}
+  sizeMultiplier: 1.1
+  starsPerLayer: 15
+  layersNum: 10
 --- !u!114 &464364740
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -183,13 +189,13 @@ Rigidbody2D:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 464364738}
   m_BodyType: 0
-  m_Simulated: 0
+  m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDamping: 0
+  m_LinearDamping: 1
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
