@@ -6,7 +6,7 @@ public class ObstacleObj : MonoBehaviour
 
     public Obstacle objObstacle = new Obstacle();
     ObstacleManager obstacleManager;
-    public void Awake()
+    public void Start()
     {
         objObstacle = DetectObstaclesInPosition.SetupObstacle(gameObject);
         if (objObstacle == null)
