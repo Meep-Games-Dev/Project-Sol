@@ -14,23 +14,26 @@ public class ObstacleObj : MonoBehaviour
             Debug.LogWarning($"GameObject {gameObject.name} does not have a collider, so there is no reason for it to be an obstacle. Deleting ObstacleObj script from GameObject {gameObject.name}");
             Destroy(this);
         }
-
-        obstacleManager = FindFirstObjectByType(typeof(ObstacleManager)).GetComponent<ObstacleManager>();
-        if (obstacleManager == null)
+        try
+        {
+            obstacleManager = FindFirstObjectByType(typeof(ObstacleManager)).GetComponent<ObstacleManager>();
+        }
+        catch
         {
             Debug.LogWarning("No obstacleManager detected in scene, please add one!");
+            Destroy(this);
         }
         obstacleManager.obstaclesInScene.Add(this);
     }
     public void LateUpdate()
     {
-        if (Vector2.Distance(objObstacle.position, transform.position) < 0.001f)
+        if (Vector2.Distance(new Vector2(objObstacle.position.x, objObstacle.position.y), transform.position) < 0.001f)
         {
-            objObstacle.position = transform.position;
+            objObstacle.position = new float2(transform.position.x, transform.position.y);
         }
-        if (objObstacle.size != new Vector2(GetComponent<Collider2D>().bounds.size.x, GetComponent<Collider2D>().bounds.size.y))
+        if (new Vector2(objObstacle.size.x, objObstacle.size.y) != new Vector2(GetComponent<Collider2D>().bounds.size.x, GetComponent<Collider2D>().bounds.size.y))
         {
-            objObstacle.size = GetComponent<Collider2D>().bounds.size;
+            objObstacle.size = new float2(GetComponent<Collider2D>().bounds.size.x, GetComponent<Collider2D>().bounds.size.y);
         }
     }
     public void OnDestroy()

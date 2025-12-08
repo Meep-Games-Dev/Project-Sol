@@ -40,7 +40,7 @@ public class ParrallaxTest : MonoBehaviour
                 Vector2 currentObjLocalScale = layer[j].transform.localScale;
                 layer[j].transform.localScale = new Vector2(Mathf.Clamp(currentObjLocalScale.x / (j + 1 * sizeMultiplier), 0.0001f, 1f), Mathf.Clamp(currentObjLocalScale.y / (j + 1 * sizeMultiplier), 0.0001f, 1f));
                 SpriteRenderer spriteRenderer = layer[j].GetComponent<SpriteRenderer>();
-                spriteRenderer.sortingOrder = layersNum - i;
+                spriteRenderer.sortingOrder = layersNum - i - 1000;
             }
             layers.Add(layer);
         }
@@ -75,7 +75,7 @@ public class ParrallaxTest : MonoBehaviour
             for (int j = 0; j < starLayers[i].Count; j++)
             {
                 starLayers[i][j].transform.Translate(-speed * layerSpeed * Time.deltaTime);
-                if (!DetectObstaclesInPosition.ContainsPoint(camPos, new Vector2(camSpace.x, camSpace.y), starLayers[i][j].transform.position).any)
+                if (!DetectObstaclesInPosition.ContainsPoint(new float2(camPos.x, camPos.y), new float2(camSpace.x, camSpace.y), new float2(starLayers[i][j].transform.position.x, starLayers[i][j].transform.position.y)).any)
                 {
                     objsToDestroy.Add(starLayers[i][j]);
                 }
@@ -87,7 +87,7 @@ public class ParrallaxTest : MonoBehaviour
             {
                 if (starLayers[j].Contains(objsToDestroy[i]))
                 {
-                    DetectObstaclesInPosition.ContainsPointReturn returnVal = DetectObstaclesInPosition.ContainsPoint(camPos, camSpace, objsToDestroy[i].transform.position);
+                    DetectObstaclesInPosition.ContainsPointReturn returnVal = DetectObstaclesInPosition.ContainsPoint(new float2(camPos.x, camPos.y), new float2(camSpace.x, camSpace.y), new float2(objsToDestroy[i].transform.position.x, objsToDestroy[i].transform.position.y));
                     starLayers[j].Remove(objsToDestroy[i]);
                     Vector2 spawnPos = new Vector2();
                     int randomNum = rnd.Next(0, 2);
@@ -177,7 +177,7 @@ public class ParrallaxTest : MonoBehaviour
                     Vector2 currentObjLocalScale = instantiatedParrallaxObj.transform.localScale;
                     instantiatedParrallaxObj.transform.localScale = new Vector2(Mathf.Clamp(currentObjLocalScale.x / (j + 1 * sizeMultiplier), 0.0001f, 1f), Mathf.Clamp(currentObjLocalScale.y / (j + 1 * sizeMultiplier), 0.0001f, 1f));
                     SpriteRenderer spriteRenderer = instantiatedParrallaxObj.GetComponent<SpriteRenderer>();
-                    spriteRenderer.sortingOrder = starLayers.Count - j;
+                    spriteRenderer.sortingOrder = starLayers.Count - j - 1000;
                     starLayers[j].Add(instantiatedParrallaxObj);
 
                     break;

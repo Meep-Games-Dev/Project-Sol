@@ -14,4 +14,15 @@ public class ObstacleManager : MonoBehaviour
         }
         return obstacles;
     }
+    public Obstacle FindObstacleByInstanceID(int instanceID)
+    {
+        for (int i = 0; i < obstaclesInScene.Count; i++)
+        {
+            if (obstaclesInScene[i].objObstacle.instanceID == instanceID)
+            {
+                return obstaclesInScene[i].objObstacle;
+            }
+        }
+        return null;
+    }
 }

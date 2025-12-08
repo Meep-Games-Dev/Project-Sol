@@ -136,6 +136,42 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""MousePos"",
+                    ""type"": ""Value"",
+                    ""id"": ""3db42907-6e4f-4446-a5a7-12c784756a66"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""MouseClickLeft"",
+                    ""type"": ""Button"",
+                    ""id"": ""52cbeb31-6eb2-403d-b0cf-5609a93df8cf"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MouseClickRight"",
+                    ""type"": ""Button"",
+                    ""id"": ""23b1b959-5a8f-4a34-9879-99cbad0e921f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Scroll"",
+                    ""type"": ""Value"",
+                    ""id"": ""b52eae29-ba27-409d-b9c6-e5b5f5afa008"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -237,6 +273,72 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""action"": ""Movement"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""363af9bc-97a9-48bd-960a-adc8c12e45e8"",
+                    ""path"": ""<Mouse>/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MousePos"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7635f820-7b84-43f3-8d1a-5e875c19a163"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MouseClickLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c757f221-1c44-4bc6-9eb4-7b3b2f361c2a"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MouseClickRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""3391e208-7534-416d-b49d-b0bce8653bcb"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Scroll"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""7815b29a-fc7c-42a7-a881-f3dd9b967a40"",
+                    ""path"": ""<Mouse>/scroll/down"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Scroll"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""0a861d1a-2961-4ef0-a599-9559c6487e25"",
+                    ""path"": ""<Mouse>/scroll/up"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Scroll"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 }
             ]
         }
@@ -250,6 +352,10 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         m_Main_CameraBack = m_Main.FindAction("CameraBack", throwIfNotFound: true);
         m_Main_CameraForward = m_Main.FindAction("CameraForward", throwIfNotFound: true);
         m_Main_Movement = m_Main.FindAction("Movement", throwIfNotFound: true);
+        m_Main_MousePos = m_Main.FindAction("MousePos", throwIfNotFound: true);
+        m_Main_MouseClickLeft = m_Main.FindAction("MouseClickLeft", throwIfNotFound: true);
+        m_Main_MouseClickRight = m_Main.FindAction("MouseClickRight", throwIfNotFound: true);
+        m_Main_Scroll = m_Main.FindAction("Scroll", throwIfNotFound: true);
     }
 
     ~@PlayerInput()
@@ -335,6 +441,10 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
     private readonly InputAction m_Main_CameraBack;
     private readonly InputAction m_Main_CameraForward;
     private readonly InputAction m_Main_Movement;
+    private readonly InputAction m_Main_MousePos;
+    private readonly InputAction m_Main_MouseClickLeft;
+    private readonly InputAction m_Main_MouseClickRight;
+    private readonly InputAction m_Main_Scroll;
     /// <summary>
     /// Provides access to input actions defined in input action map "Main".
     /// </summary>
@@ -366,6 +476,22 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Main/Movement".
         /// </summary>
         public InputAction @Movement => m_Wrapper.m_Main_Movement;
+        /// <summary>
+        /// Provides access to the underlying input action "Main/MousePos".
+        /// </summary>
+        public InputAction @MousePos => m_Wrapper.m_Main_MousePos;
+        /// <summary>
+        /// Provides access to the underlying input action "Main/MouseClickLeft".
+        /// </summary>
+        public InputAction @MouseClickLeft => m_Wrapper.m_Main_MouseClickLeft;
+        /// <summary>
+        /// Provides access to the underlying input action "Main/MouseClickRight".
+        /// </summary>
+        public InputAction @MouseClickRight => m_Wrapper.m_Main_MouseClickRight;
+        /// <summary>
+        /// Provides access to the underlying input action "Main/Scroll".
+        /// </summary>
+        public InputAction @Scroll => m_Wrapper.m_Main_Scroll;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -407,6 +533,18 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
             @Movement.started += instance.OnMovement;
             @Movement.performed += instance.OnMovement;
             @Movement.canceled += instance.OnMovement;
+            @MousePos.started += instance.OnMousePos;
+            @MousePos.performed += instance.OnMousePos;
+            @MousePos.canceled += instance.OnMousePos;
+            @MouseClickLeft.started += instance.OnMouseClickLeft;
+            @MouseClickLeft.performed += instance.OnMouseClickLeft;
+            @MouseClickLeft.canceled += instance.OnMouseClickLeft;
+            @MouseClickRight.started += instance.OnMouseClickRight;
+            @MouseClickRight.performed += instance.OnMouseClickRight;
+            @MouseClickRight.canceled += instance.OnMouseClickRight;
+            @Scroll.started += instance.OnScroll;
+            @Scroll.performed += instance.OnScroll;
+            @Scroll.canceled += instance.OnScroll;
         }
 
         /// <summary>
@@ -433,6 +571,18 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
             @Movement.started -= instance.OnMovement;
             @Movement.performed -= instance.OnMovement;
             @Movement.canceled -= instance.OnMovement;
+            @MousePos.started -= instance.OnMousePos;
+            @MousePos.performed -= instance.OnMousePos;
+            @MousePos.canceled -= instance.OnMousePos;
+            @MouseClickLeft.started -= instance.OnMouseClickLeft;
+            @MouseClickLeft.performed -= instance.OnMouseClickLeft;
+            @MouseClickLeft.canceled -= instance.OnMouseClickLeft;
+            @MouseClickRight.started -= instance.OnMouseClickRight;
+            @MouseClickRight.performed -= instance.OnMouseClickRight;
+            @MouseClickRight.canceled -= instance.OnMouseClickRight;
+            @Scroll.started -= instance.OnScroll;
+            @Scroll.performed -= instance.OnScroll;
+            @Scroll.canceled -= instance.OnScroll;
         }
 
         /// <summary>
@@ -508,5 +658,33 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnMovement(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "MousePos" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMousePos(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "MouseClickLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMouseClickLeft(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "MouseClickRight" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMouseClickRight(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Scroll" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnScroll(InputAction.CallbackContext context);
     }
 }

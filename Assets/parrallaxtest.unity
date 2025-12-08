@@ -154,8 +154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParrallaxTest
   prefabs:
-  - {fileID: 4123775239780363436, guid: 26bf08b34c4eb684b9bfc7dbe3ea7621, type: 3}
-  - {fileID: 4123775239780363436, guid: 8173fb8a4166d164aae2d3d440f8f50b, type: 3}
+  - {fileID: 2593564566210776878, guid: 51baa1a0795f8b643adf9bab16736271, type: 3}
   cam: {fileID: 464364740}
   camSpace: {x: 0, y: 0}
   layerSpeedMultiplier: 1
