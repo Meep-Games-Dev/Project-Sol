@@ -1,33 +1,54 @@
 using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine.UI;
 
-/*
-public class RootSpaceStationPeice : MonoBehaviour
+public class Root // might not matter bc Root
+// is an unmovable object with the sole purpose of linking together a space station, not moving!
 {
     public int X;
     public int Y;
-    public Script OtherSpaceStationPeices;//have OtherSpaceStationPeices.cs be a link to all peices
-//OtherSpaceStationPeice will be a function that does the bundling and returns the selected peice
-//when a peice is selected, it will be stored in OtherSpaceStationPeice
-//I need a int for X, Y, and Rotation for OtherSpaceStationPeice
-    OtherSpaceStationPeices OtherSpaceStationPeice;
-    public Sprite me;
-    
+    public int R;
+}
 
-    void Start() {
+
+public class RootSpaceStationPeice : MonoBehaviour
+{
+
+    public OtherSpaceStationPeices referance;
+    
+    var pieces = 0;
+    void Start()
+    {
         X = 0;
         Y = 0;
+        Z = 0;
     }
-    public void OnCollision(Collision collision){
-        GameObject otherObj = collision.gameObject;
-        if ((OtherSpaceStationPeice.X == X && OtherSpaceStationPeice.Y == Y) || otherObj )
-        {
-            
-            me = me += OtherSpaceStationPeice;
-            //wait no this doesnt work, AHHHHHHHHHH. 
-            //make it so if their touching, not on top of each other!!!!!
+    void Disp(msg, txtsize, x, y)//display a message the the screen
+    {
+        // do the UI rendering "fun" where the msg fades after 2.5 seconds
+    }
 
+    void Update()
+    {
+        if (X != 0 || Y != 0 || R != 0)
+        {
+            X = 0;
+            Y = 0;
+            Z = 0;
+        }
+        if (OtherSpaceStationPeices.SelectedPiece /*Is touching root*/)
+        {
+            pieces += 1;
+            //detect where the piece is touching and append it to that area.
+        }
+        if (pieces == 0)
+        {
+            Disp("Attach a piece to the root piece to get started!", 15, 0, 5);
+        }
+        if (pieces == 64) // to prevent crashing the game and messing up storage later update to a better #
+        {
+            Disp("Error, you cannot have more than 64 pieces on the space station at a time", 20, 0, 0);
+            break;
         }
     }
-
 }
-*/
