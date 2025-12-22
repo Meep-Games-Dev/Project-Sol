@@ -1,33 +1,46 @@
+using System;
 using UnityEngine;
-/*
+using System.Collections.Generic;
+
+
+public class Structual_piece
+{
+    public Structual_piece referance;
+    public int X;
+    public int Y;
+    public int R;// rotation in 90 degree increments-starting at 0
+}
+public class ResourceMiner_piece
+{
+    public ResourceRefine referance;
+    public int X;
+    public int Y;
+    public int R;
+}
 public class OtherSpaceStationPeices : MonoBehaviour
 {
-    class Pieces//each peice will be a struct in this class
-    {
-        struct Structual_piece
-        { //make a struct like this for each peice
-            public Script StructualPiece;
-            public int X;
-            public int Y;
-            public int R; //rotation
-        }
-        struct ResourceMiner_piece
-        {
-            public Script ResourceMinerPiece;
-            public int X;
-            public int Y;
-            public int R; //rotation
-        }
-    }
-    public void PeiceSelection(Pieces piece){
 
-        void OnMouseDown(Pieces.Structual_piece peice)
+    public List<Item> pieces= new List<Item>() {Structual_Piece, ResourceMiner_piece};
+
+
+
+    void Update()
+    {
+        for (int i = 0; i < pieces)
         {
-            SelectedPiece = Pieces.Structual_piece;
-            Piece = SelectedPiece;//makes it so Piece is a clone of selectedPeice. 
-//ex: Pieces.Structual_piece -> SelectedPiece -> Piece so Pieces.Structual_piece is not directly affected.
+            if (Input.GetKey(KeyCode.E))
+            {
+                var SelectedPiece = pieces(i);
+                i += 1;
+                if (i > pieces)
+                {
+                    i = 0;
+                }
+            }
+        }
+        if (Input.GetKey(KeyCode.R))
+        {
+            SelectedPiece.R += 90;
         }
     }
-    
 }
-*/
