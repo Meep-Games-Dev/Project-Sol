@@ -48,6 +48,7 @@ public class RootSpaceStationPeice : MonoBehaviour
         if (pieces == 64) // to prevent crashing the game and messing up storage later update to a better #
         {
             Disp("Error, you cannot have more than 64 pieces on the space station at a time", 20, 0, 0);
+            //Don't allow anymore pieces to be added
         }
     }
 }
