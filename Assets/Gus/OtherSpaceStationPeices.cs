@@ -1,46 +1,61 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using Structual_Piece;
+using ResourceMiner_piece;
+using RootSpaceStationPeice;
 
-
-public class Structual_piece
+namespace OtherSpaceStationPeices
 {
-    public Structual_piece referance;
-    public int X;
-    public int Y;
-    public int R;// rotation in 90 degree increments-starting at 0
-}
-public class ResourceMiner_piece
-{
-    public ResourceRefine referance;
-    public int X;
-    public int Y;
-    public int R;
-}
-public class OtherSpaceStationPeices : MonoBehaviour
-{
-
-    public List<Item> pieces= new List<Item>() {Structual_Piece, ResourceMiner_piece};
-
-
-
-    void Update()
+    public class OtherSpaceStationPeices : MonoBehaviour
     {
-        for (int i = 0; i < pieces)
+        int i = 0; 
+        public List<Item> pieces= new List<Item>() {Structual_Piece, ResourceMiner_piece};
+        RootSpaceStationPeice rootPiece = new RootSpaceStationPeice();
+
+
+
+        void Update()
         {
-            if (Input.GetKey(KeyCode.E))
+            while (i < pieces.Count)
             {
-                var SelectedPiece = pieces(i);
-                i += 1;
-                if (i > pieces)
+                if (Input.GetKey(KeyCode.E))
                 {
-                    i = 0;
+                    var SelectedPiece = pieces[i];
+                    i += 1;
+                    if (i > pieces.Count) // might not work bc the for loop might have already exited
+                    {
+                        i = 0;
+                    }
                 }
             }
-        }
-        if (Input.GetKey(KeyCode.R))
-        {
-            SelectedPiece.R += 90;
+            if(Input.GetKey(KeyCode.P))
+            {
+                //snap the piece to the root piece 
+                // ALSO IN RootSpaceStationPeice.cs possible double unless changed
+                rootPiece.pieces += 1;
+            }
+            if (Input.GetKey(KeyCode.R))
+            {
+                SelectedPiece.R += 90; 
+
+            }
+            if (Input.GetKey(KeyCode.RightArrow))
+            {
+                SelectedPiece.X += 1;
+            }
+            if (Input.GetKey(KeyCode.LeftArrow))
+            {
+                SelectedPiece.X -= 1;
+            }
+            if(Input.GetKey(KeyCode.UpArrow))
+            {
+                SelectedPiece.Y += 1;
+            }
+            if(Input.GetKey(KeyCode.DownArrow))
+            {
+                SelectedPiece.Y -= 1;   
+            }
         }
     }
 }
