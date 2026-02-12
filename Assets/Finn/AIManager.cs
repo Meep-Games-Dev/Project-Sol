@@ -68,7 +68,7 @@ public class AIManager : MonoBehaviour
             newAI.instanceID = newAI.obj.gameObject.GetInstanceID();
             selector.selectableGameObjs.Add(newAI.obj);
             selector.selectableObjs.Add(newAI);
-            newAI.targetPos = targets[0].gameObject.transform.position;
+            newAI.targetPos = targets[1].gameObject.transform.position;
             //newAI.rb = newAI.obj.GetComponent<Rigidbody2D>();
             AIs.Add(newAI);
         }
@@ -413,7 +413,7 @@ public class AIManager : MonoBehaviour
 
                         int lx = Mathf.FloorToInt(localIdx.x);
                         int ly = Mathf.FloorToInt(localIdx.y);
-
+                        Debug.Log($"AI position index {localIdx}, sector origin {sectorOrigin}");
 
 
 
@@ -480,22 +480,22 @@ public class AIManager : MonoBehaviour
                             AI.pathStatus = PathfindingStatus.NotRequested;
                             //Debug.Log($"AI {i} has arrived!");
                         }
-                        //for (int j = 0; j < AI.finishedPathfindingTask.sectorPath.Count; j++)
-                        //{
+                        for (int j = 0; j < AI.finishedPathfindingTask.sectorPath.Count; j++)
+                        {
 
-                        //     //Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].pos, new Vector2(1, 0), Color.white);
+                            //Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].pos, new Vector2(1, 0), Color.white);
 
 
-                        //    for (int x = 0; x < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(0); x++)
-                        //    {
-                        //        for (int y = 0; y < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(1); y++)
-                        //        {
-                        //             //Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].field[x, y].position, AI.finishedPathfindingTask.sectorPath[j].field[x, y].dir, Color.green);
-                        //        }
-                        //    }
-                        //    Vector2  //DebugNodePos = sectorOrigin + new Vector2(lx * nodeSize + nodeSize * 0.5f, ly * nodeSize + nodeSize * 0.5f);
-                        //     //Debug.DrawLine(AI.obj.transform.position,  //DebugNodePos, Color.blue);
-                        //}
+                            for (int x = 0; x < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(0); x++)
+                            {
+                                for (int y = 0; y < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(1); y++)
+                                {
+                                    Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].field[x, y].position, AI.finishedPathfindingTask.sectorPath[j].field[x, y].dir, Color.green);
+                                }
+                            }
+                            //DebugNodePos = sectorOrigin + new Vector2(lx * nodeSize + nodeSize * 0.5f, ly * nodeSize + nodeSize * 0.5f);
+                            //Debug.DrawLine(AI.obj.transform.position,  //DebugNodePos, Color.blue);
+                        }
                         // //Debug.Log(currentActiveField.field[lx, ly].dir + " lx: " + lx + " ly:" + ly + " sector origin: " + sectorOrigin);
 
                     }
@@ -517,7 +517,7 @@ public class AIManager : MonoBehaviour
             }
             Debug.Log(debugString);
             Debug.Log(AI.finishedPathfindingTask.sectorVectorPath.Count + " " + AI.finishedPathfindingTask.sectorPath.Count);
-            Debug.Log($"Frame Info: AI pos: {AI.obj.transform.position}, Flow Field IDX {AI.finishedPathfindingTask.sectorPath[0].pathRef}, Flow Field Pos: {AI.finishedPathfindingTask.sectorPath[0].pos}, Current Sector {findCurrentSector(AI.obj.transform.position)}, Vector: {Float2.ConvertToV2(AI.finishedPathfindingTask.sectorVectorPath[0])}");
+            Debug.Log($"Frame Info: AI pos: {AI.obj.transform.position}, Flow Field IDX {AI.finishedPathfindingTask.sectorPath[0].pathRef}, Flow Field Pos: {AI.finishedPathfindingTask.sectorPath[0].pos}, Current Sector {findCurrentSector(AI.obj.transform.position)}");
             AIs[i] = AI;
         }
         DetectNearbyJob detectNearby = new DetectNearbyJob()
@@ -581,9 +581,9 @@ public class AIManager : MonoBehaviour
 
             Debug.Log(currentActiveField.pos.x + " " + currentActiveField.pos.y);
 
-            Vector2 newSectorCenter = new Vector2(currentActiveField.pos.x + (flowFieldSize / 2), currentActiveField.pos.y + (flowFieldSize / 2));
+            Vector2 newSectorCenter = new Vector2((currentActiveField.pos.x * currentActiveField.dir.x) + (flowFieldSize / 2), (currentActiveField.pos.y * currentActiveField.dir.y) + (flowFieldSize / 2));
 
-            sectorOrigin = findSectorOrigin(new Vector2(currentActiveField.pos.x, currentActiveField.pos.y));
+            sectorOrigin = findSectorOrigin(new Vector2(currentActiveField.nodeX, currentActiveField.nodeY));
             localIdx = WorldToLocalFieldIndex(AI.obj.transform.position, sectorOrigin);
             Debug.Log($"Current active field : {currentActiveField.pos.x}, {currentActiveField.pos.y}. Sector origin calculated at : {sectorOrigin}. localIdx calculated at : {localIdx}");
             if (localIdx.x > flowFieldSize || localIdx.x < 0 || localIdx.y > flowFieldSize || localIdx.y < 0)
@@ -1076,7 +1076,12 @@ public class AIManager : MonoBehaviour
             {
                 for (int y = 0; y < nodeGridHeight; y++)
                 {
-                    if (totalNodes[x, y].totalCost == 0) continue;
+                    if (totalNodes[x, y].totalCost == 0)
+                    {
+                        totalNodes[x, y].dir = request.dir;
+                        continue;
+                    }
+
 
                     float bestCost = totalNodes[x, y].totalCost;
                     Vector2 bestDir = Vector2.zero;
