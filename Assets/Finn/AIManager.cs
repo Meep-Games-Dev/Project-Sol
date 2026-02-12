@@ -2,9 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
+using static UnityEditor.PlayerSettings;
+using static UnityEngine.InputManagerEntry;
 
 
 public class AIManager : MonoBehaviour
@@ -24,16 +30,17 @@ public class AIManager : MonoBehaviour
     public List<PathFinderAI> AIsWaitingForTask = new List<PathFinderAI>();
     ObstacleManager obstacleManager;
     SelectTest selector;
-    public bool debugObstacleMap = false;
-    public int flowFieldSize = 20;
+    public int flowFieldSize = 50;
     [HideInInspector]
     public List<FlowFieldReturn>[,] flowFields;
     [HideInInspector]
     public CompleteObstacleMapReturn[,] flowFieldObstacleMapReturns;
     [HideInInspector]
     public List<FlowFieldReturn> destinationFlowFields = new List<FlowFieldReturn>();
-
+    public List<Transform> AITargets;
     private Float2Bounds mapBounds;
+    public float nudgeForce;
+
 
     private CompleteObstacleMapReturn highQualityMapReturn;
 
@@ -48,6 +55,7 @@ public class AIManager : MonoBehaviour
     private void Start()
     {
         selector = gameObject.GetComponent<SelectTest>();
+        UnityEngine.Random.InitState(1);
         for (int i = 0; i < AINumber; i++)
         {
             PathFinderAI newAI = new PathFinderAI();
@@ -61,6 +69,7 @@ public class AIManager : MonoBehaviour
             selector.selectableGameObjs.Add(newAI.obj);
             selector.selectableObjs.Add(newAI);
             newAI.targetPos = targets[0].gameObject.transform.position;
+            //newAI.rb = newAI.obj.GetComponent<Rigidbody2D>();
             AIs.Add(newAI);
         }
         obstacleManager = FindFirstObjectByType(typeof(ObstacleManager)).GetComponent<ObstacleManager>();
@@ -144,11 +153,20 @@ public class AIManager : MonoBehaviour
                 lowQualityMapReturn.obstacleMapBool[x, y] = false;
             }
         }
-        Debug.Log($"Low quality Map Return size is currently: x: {lowQualityMapReturn.obstacleMap.GetLength(0)}, y: {lowQualityMapReturn.obstacleMap.GetLength(1)}");
-        Debug.Log($"Mapbounds is at position: x: {mapBounds.position.x}, y: {mapBounds.position.y}, size (extents): x: {mapBounds.size.x}, y: {mapBounds.size.y}");
+        //Debug.Log($"Low quality Map Return size is currently: x: {lowQualityMapReturn.obstacleMap.GetLength(0)}, y: {lowQualityMapReturn.obstacleMap.GetLength(1)}");
+        //Debug.Log($"Mapbounds is at position: x: {mapBounds.position.x}, y: {mapBounds.position.y}, size (extents): x: {mapBounds.size.x}, y: {mapBounds.size.y}");
+
+        //for (int i = 0; i < AIs.Count; i++)
+        //{
+        //    System.Random rnd = new System.Random();
+        //    AIs[i].targetSet = true;
+        //    AIs[i].targetPos = targets[rnd.Next(0, targets.Count)].transform.position;
+        //    AIs[i].pathStatus = PathfindingStatus.Requested;
+        //}
         AIs[0].targetSet = true;
-        AIs[0].targetPos = targets[0].transform.position;
+        AIs[0].targetPos = targets[1].transform.position;
         AIs[0].pathStatus = PathfindingStatus.Requested;
+
     }
     public Vector2 findCurrentSector(Vector2 position)
     {
@@ -173,7 +191,7 @@ public class AIManager : MonoBehaviour
     public void Update()
     {
         DrawRectangle(mapBounds.position, mapBounds.size, Color.green);
-        //Debug.Log($"mapbounds size {mapBounds.size.x}, {mapBounds.size.y}");
+        // //Debug.Log($"mapbounds size {mapBounds.size.x}, {mapBounds.size.y}");
         if (loops > loopsPerObstacleMap)
         {
             loops = 0;
@@ -182,6 +200,7 @@ public class AIManager : MonoBehaviour
             List<CustomObject> returnedObjects = DetectObstaclesInPosition.SetupObjects(AIs.Select(a => a.obj).ToList());
             currentObstacleMapTask = Task.Run(() => DetectObstaclesInPosition.CompleteObstacleMap(returnedObstacles, 1, returnedTargets, returnedObjects));
         }
+
         if (currentObstacleMapTask != null)
         {
             if (currentObstacleMapTask.IsCompleted)
@@ -253,19 +272,46 @@ public class AIManager : MonoBehaviour
 
                                 selectedFlowFieldObstacleMapReturn.obstacleMap[fX, fY] = highQualityMapReturn.obstacleMap[hx, hy];
                                 selectedFlowFieldObstacleMapReturn.obstacleMapBool[fX, fY] = highQualityMapReturn.obstacleMapBool[hx, hy];
+
                             }
                         }
                         flowFieldObstacleMapReturns[x, y] = selectedFlowFieldObstacleMapReturn;
                     }
                 }
                 currentObstacleMapTask = null;
-                //Debug.Log($"Mapbounds is at position: x: {mapBounds.position.x}, y: {mapBounds.position.y}, size: x: {mapBounds.size.x}, y: {mapBounds.size.y}");
+                // //Debug.Log($"Mapbounds is at position: x: {mapBounds.position.x}, y: {mapBounds.position.y}, size: x: {mapBounds.size.x}, y: {mapBounds.size.y}");
             }
             else if (currentObstacleMapTask.IsFaulted)
             {
-                Debug.LogError(currentObstacleMapTask.Exception.InnerException);
+                //Debug.LogError(currentObstacleMapTask.Exception.InnerException);
             }
         }
+        for (int x = 0; x < flowFields.GetLength(0); x++)
+        {
+            for (int y = 0; y < flowFields.GetLength(1); y++)
+            {
+                for (int j = 0; j < flowFields[x, y].Count; j++)
+                {
+                    flowFields[x, y][j].loopsSinceUpdated++;
+                    flowFields[x, y][j].loopsSinceUsed++;
+                    if (flowFields[x, y][j].loopsSinceUpdated > 100000 || flowFields[x, y][j].loopsSinceUsed > 10000)
+                    {
+                        flowFields[x, y].RemoveAt(j);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < destinationFlowFields.Count; i++)
+        {
+            destinationFlowFields[i].loopsSinceUpdated++;
+            destinationFlowFields[i].loopsSinceUsed++;
+            if (destinationFlowFields[i].loopsSinceUpdated > 100000 || destinationFlowFields[i].loopsSinceUsed > 10000)
+            {
+                destinationFlowFields.RemoveAt(i);
+            }
+        }
+        NativeArray<float3> AIPositions = new NativeArray<float3>(AIs.Count, Allocator.TempJob);
+        var results = new NativeArray<float2>(AIs.Count, Allocator.TempJob);
         for (int i = 0; i < AIs.Count; i++)
         {
             PathFinderAI AI = AIs[i];
@@ -275,12 +321,12 @@ public class AIManager : MonoBehaviour
             {
                 if (AI.pathStatus == PathfindingStatus.Faulted)
                 {
-                    Debug.LogError($"Alert! AI {i}'s pathfinding task has been marked as 'faulted'! find more info above this in the debug log. Retrying pathfinding task");
+                    //Debug.LogError($"Alert! AI {i}'s pathfinding task has been marked as 'faulted'! find more info above this in the  //Debug log. Retrying pathfinding task");
                     AI.pathStatus = PathfindingStatus.Requested;
                 }
                 if (AI.pathStatus == PathfindingStatus.Requested)
                 {
-                    Debug.Log($"AI {i}: path has been requested");
+                    //Debug.Log($"AI {i}: path has been requested");
                     AI.pathfindingTask = null;
                     AI.pathStatus = PathfindingStatus.CalculatingFlowField;
                     PathFindTSInput data = new PathFindTSInput
@@ -299,7 +345,7 @@ public class AIManager : MonoBehaviour
                         destinationFlowFields = destinationFlowFields,
                     };
                     AI.pathfindingTask = Task.Run(() => Pathfind(data));
-                    Debug.Log($"AI {i}: flow field has begun calculating");
+                    //Debug.Log($"AI {i}: flow field has begun calculating");
                 }
                 else if (AI.pathStatus == PathfindingStatus.CalculatingFlowField)
                 {
@@ -312,11 +358,24 @@ public class AIManager : MonoBehaviour
                         }
                         else
                         {
-                            Debug.Log($"AI {i}: flow field has been calculated");
+                            //Debug.Log($"AI {i}: flow field has been calculated");
                             AI.pathStatus = PathfindingStatus.FinishedFlowField;
                             AI.finishedPathfindingTask = AI.pathfindingTask.Result;
+                            AI.finishedPathfindingTask.cachedSectorPath = AI.pathfindingTask.Result.sectorPath;
+                            AI.finishedPathfindingTask.cachedSectorVectorPath = AI.pathfindingTask.Result.sectorVectorPath;
                             AI.pathfindingTask = null;
                             destinationFlowFields.Add(AI.finishedPathfindingTask.sectorPath[AI.finishedPathfindingTask.sectorPath.Count - 1]);
+                            for (int j = 0; j < AI.finishedPathfindingTask.flowFieldIdxReferences.Count; j++)
+                            {
+                                if (flowFields[AI.finishedPathfindingTask.flowFieldIdxReferences[j].x, AI.finishedPathfindingTask.flowFieldIdxReferences[j].y][AI.finishedPathfindingTask.flowFieldIdxReferences[j].z] != null)
+                                {
+                                    flowFields[AI.finishedPathfindingTask.flowFieldIdxReferences[j].x, AI.finishedPathfindingTask.flowFieldIdxReferences[j].y][AI.finishedPathfindingTask.flowFieldIdxReferences[j].z].loopsSinceUsed = 0;
+                                }
+                            }
+                            if (AI.finishedPathfindingTask.destinationFlowFieldIdxReference != -1)
+                            {
+                                destinationFlowFields[AI.finishedPathfindingTask.destinationFlowFieldIdxReference].loopsSinceUsed = 0;
+                            }
                             for (int j = 0; j < AI.finishedPathfindingTask.sectorPath.Count - 1; j++)
                             {
                                 int positionX = AI.finishedPathfindingTask.sectorPath[j].nodeX;
@@ -341,7 +400,7 @@ public class AIManager : MonoBehaviour
                     else if (AI.pathfindingTask.IsFaulted)
                     {
                         AI.pathStatus = PathfindingStatus.Faulted;
-                        Debug.LogError(AI.pathfindingTask.Exception.InnerException);
+                        //Debug.LogError(AI.pathfindingTask.Exception.InnerException);
                     }
                 }
                 else if (AI.pathStatus == PathfindingStatus.FinishedFlowField)
@@ -352,87 +411,60 @@ public class AIManager : MonoBehaviour
                         Vector2 sectorOrigin = findSectorOrigin(new Vector2(currentActiveField.nodeX, currentActiveField.nodeY));
                         Vector2 localIdx = WorldToLocalFieldIndex(AI.obj.transform.position, sectorOrigin);
 
-                        int lx = (int)localIdx.x;
-                        int ly = (int)localIdx.y;
+                        int lx = Mathf.FloorToInt(localIdx.x);
+                        int ly = Mathf.FloorToInt(localIdx.y);
 
 
 
 
                         Vector2 moveDir = new Vector2();
+                        bool positionZero = true;
                         try
                         {
                             moveDir = currentActiveField.field[lx, ly].dir;
+                            if (moveDir == Vector2.zero)
+                            {
+                                Debug.Log($"AI {i} is currently in position {lx}, {ly} on its flow field with no move dir");
+
+                            }
                         }
                         catch
                         {
                             moveDir = Vector2.zero;
+                            positionZero = false;
+                            Debug.Log($"AI {i} is outside of current flow field");
                         }
                         if (moveDir != Vector2.zero)
                         {
                             AI.obj.transform.Translate(AISpeed * Time.deltaTime * moveDir);
-                            Debug.Log("Moving in Dir " + moveDir);
+                            //Debug.Log("Moving in Dir " + moveDir);
                         }
                         else
                         {
-                            if (AI.finishedPathfindingTask.sectorPath.Count > 1)
+
+                            if (Float2.ConvertToF2(findCurrentSector(AI.obj.transform.position)) != AI.finishedPathfindingTask.sectorVectorPath[0])
                             {
-                                if (currentActiveField.pos != AI.finishedPathfindingTask.sectorPath[1].pos)
+
+                                if (AI.finishedPathfindingTask.sectorPath.Count > 1)
                                 {
-                                    Vector2 correctionDir = new Vector2();
-                                    if (lx > flowFieldSize + 1)
-                                    {
-                                        correctionDir.x = -1;
-                                    }
-                                    else if (lx < flowFieldSize + 1)
-                                    {
-                                        correctionDir.x = 1;
-                                    }
-                                    if (ly > flowFieldSize + 1)
-                                    {
-                                        correctionDir.y = -1;
-                                    }
-                                    else if (ly < flowFieldSize + 1)
-                                    {
-                                        correctionDir.y = 1;
-                                    }
-                                    AI.obj.transform.Translate(correctionDir);
-                                    Debug.Log("AI off course, trying to correct... Applying correction dir " + correctionDir);
+                                    Debug.Log($"AI {i} Initiating Nudge");
+                                    Nudge(AI, i);
+                                }
+                                else if (positionZero)
+                                {
+                                    Debug.Log($"AI {i} Initiating Nudge");
+                                    Nudge(AI, i);
                                 }
                                 else
                                 {
-                                    Vector2 nextSectorIdx = WorldToLocalFieldIndex(AI.obj.transform.position, findSectorOrigin(new Vector2(AI.finishedPathfindingTask.sectorPath[1].nodeX, AI.finishedPathfindingTask.sectorPath[1].nodeY)));
-
-                                    Vector2 nudgeDir = Vector2.zero;
-
-                                    if (nextSectorIdx.x > flowFieldSize + 1)
-                                    {
-                                        nudgeDir.x = -1;
-                                    }
-                                    else if (nextSectorIdx.x < 0)
-                                    {
-                                        nudgeDir.x = 1;
-                                    }
-                                    if (nextSectorIdx.y > flowFieldSize + 1)
-                                    {
-                                        nudgeDir.y = -1;
-                                    }
-                                    else if (nextSectorIdx.y < 0)
-                                    {
-                                        nudgeDir.y = 1;
-                                    }
-
-                                    AI.obj.transform.Translate(nudgeDir);
-                                    Debug.Log("Next sector index is " + nextSectorIdx + "(before nudge)");
-                                    Debug.Log("Applying nudge dir to AI " + nudgeDir);
-                                    nextSectorIdx = WorldToLocalFieldIndex(AI.obj.transform.position, findSectorOrigin(new Vector2(AI.finishedPathfindingTask.sectorPath[1].nodeX, AI.finishedPathfindingTask.sectorPath[1].nodeY)));
-                                    Debug.Log("Position after nudge: " + nextSectorIdx);
-                                    if (nextSectorIdx.x >= 0 && nextSectorIdx.x <= flowFieldSize && nextSectorIdx.y >= 0 && nextSectorIdx.y <= flowFieldSize)
-                                    {
-                                        AI.finishedPathfindingTask.sectorPath.RemoveAt(0);
-
-                                    }
+                                    Debug.Log($"AI {i} Repathing");
+                                    AI.pathStatus = PathfindingStatus.Requested;
                                 }
-
+                            }
+                            else
+                            {
+                                Debug.Log($"AI {i} Currently in sector");
+                                Nudge(AI, i);
                             }
                         }
                         //if (AI.finishedPathfindingTask.sectorPath.Count > 1)
@@ -442,44 +474,204 @@ public class AIManager : MonoBehaviour
                         //    AI.obj.transform.Translate(handoffDir * Time.deltaTime * AISpeed);
                         //}
 
-                        if (Vector2.Distance(AI.obj.transform.position, AI.targetPos) < 0.5f)
+                        if (Vector2.Distance(AI.obj.transform.position, AI.targetPos) < 1f)
                         {
                             AI.targetSet = false;
-                            Debug.Log($"AI {i} has arrived!");
+                            AI.pathStatus = PathfindingStatus.NotRequested;
+                            //Debug.Log($"AI {i} has arrived!");
                         }
-                        for (int j = 0; j < AI.finishedPathfindingTask.sectorPath.Count; j++)
-                        {
+                        //for (int j = 0; j < AI.finishedPathfindingTask.sectorPath.Count; j++)
+                        //{
 
-                            Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].pos, new Vector2(1, 0), Color.white);
+                        //     //Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].pos, new Vector2(1, 0), Color.white);
 
 
-                            for (int x = 0; x < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(0); x++)
-                            {
-                                for (int y = 0; y < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(1); y++)
-                                {
-                                    Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].field[x, y].position, AI.finishedPathfindingTask.sectorPath[j].field[x, y].dir, Color.green);
-                                }
-                            }
-                            Vector2 debugNodePos = sectorOrigin + new Vector2(lx * nodeSize + nodeSize * 0.5f, ly * nodeSize + nodeSize * 0.5f);
-                            Debug.DrawLine(AI.obj.transform.position, debugNodePos, Color.blue);
-                        }
-                        Debug.Log(currentActiveField.field[lx, ly].dir + " lx: " + lx + " ly:" + ly + " sector origin: " + sectorOrigin);
+                        //    for (int x = 0; x < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(0); x++)
+                        //    {
+                        //        for (int y = 0; y < AI.finishedPathfindingTask.sectorPath[j].field.GetLength(1); y++)
+                        //        {
+                        //             //Debug.DrawRay(AI.finishedPathfindingTask.sectorPath[j].field[x, y].position, AI.finishedPathfindingTask.sectorPath[j].field[x, y].dir, Color.green);
+                        //        }
+                        //    }
+                        //    Vector2  //DebugNodePos = sectorOrigin + new Vector2(lx * nodeSize + nodeSize * 0.5f, ly * nodeSize + nodeSize * 0.5f);
+                        //     //Debug.DrawLine(AI.obj.transform.position,  //DebugNodePos, Color.blue);
+                        //}
+                        // //Debug.Log(currentActiveField.field[lx, ly].dir + " lx: " + lx + " ly:" + ly + " sector origin: " + sectorOrigin);
 
                     }
                 }
-            }
 
+            }
+            AIPositions[i] = AIs[i].obj.transform.position;
+            //Debug.Log($"AI {i} pos is {AIs[i].obj.transform.position}");
+            string debugString = "";
+            for (int j = 0; j < AI.finishedPathfindingTask.sectorVectorPath.Count; j++)
+            {
+                debugString = debugString + " " + Float2.ConvertToV2(AI.finishedPathfindingTask.sectorVectorPath[j]);
+            }
+            Debug.Log(debugString);
+            debugString = "";
+            for (int j = 0; j < AI.finishedPathfindingTask.sectorPath.Count; j++)
+            {
+                debugString = debugString + " " + AI.finishedPathfindingTask.sectorPath[j].nodeX + ", " + AI.finishedPathfindingTask.sectorPath[j].nodeY;
+            }
+            Debug.Log(debugString);
+            Debug.Log(AI.finishedPathfindingTask.sectorVectorPath.Count + " " + AI.finishedPathfindingTask.sectorPath.Count);
+            Debug.Log($"Frame Info: AI pos: {AI.obj.transform.position}, Flow Field IDX {AI.finishedPathfindingTask.sectorPath[0].pathRef}, Flow Field Pos: {AI.finishedPathfindingTask.sectorPath[0].pos}, Current Sector {findCurrentSector(AI.obj.transform.position)}, Vector: {Float2.ConvertToV2(AI.finishedPathfindingTask.sectorVectorPath[0])}");
             AIs[i] = AI;
         }
+        DetectNearbyJob detectNearby = new DetectNearbyJob()
+        {
+            allPositions = AIPositions,
+            detectionRadiusSq = 2,
+            nearbyMap = results
+        };
+        for (int i = 0; i < results.Length; i++) results[i] = float2.zero;
+        JobHandle handle = detectNearby.Schedule(AIs.Count, 64);
+        handle.Complete();
+
+        for (int i = 0; i < AIs.Count; i++)
+        {
+            Vector2 push = results[i];
+            if (push != Vector2.zero && !float.IsNaN(push.x))
+            {
+                Vector2 safeMove = Vector2.ClampMagnitude(push, AISpeed);
+                //AIs[i].obj.transform.Translate(safeMove * 3 * Time.deltaTime);
+                //Debug.Log($"AI {i} is applying force {safeMove}");
+            }
+        }
+        AIPositions.Dispose();
+        results.Dispose();
         loops++;
         //for(int x = 0; x < flowFields.GetLength(0); x++)
         //{
         //    for(int y = 0;y < flowFields.GetLength(1); y++)
         //    {
-        //        Debug.DrawLine()
+        //         //Debug.DrawLine()
         //    }
         //}
 
+    }
+    public void Nudge(PathFinderAI AI, int i)
+    {
+        var currentActiveField = AI.finishedPathfindingTask.sectorPath[0];
+        Vector2 sectorOrigin = findSectorOrigin(new Vector2(currentActiveField.nodeX, currentActiveField.nodeY));
+        Vector2 localIdx = WorldToLocalFieldIndex(AI.obj.transform.position, sectorOrigin);
+        Vector2 AIPos = AI.obj.transform.position;
+        Float2 target = Float2.ConvertToF2(findCurrentSector(AI.obj.transform.position));
+        //Debug.Log($"X: {mapBounds.min.x}, Y: {mapBounds.min.y}");
+        Debug.Log(AI.obj.transform.position);
+        Debug.Log($"X: {target.x}, Y: {target.y}");
+        int matchedFlowFieldIdx = AI.finishedPathfindingTask.sectorPath.FindIndex(x => x.nodeX == target.x && x.nodeY == target.y);
+        if (matchedFlowFieldIdx != -1)
+        {
+
+            Debug.Log($"Matched flow field idx : {matchedFlowFieldIdx}");
+            Debug.Log(AI.finishedPathfindingTask.sectorPath[matchedFlowFieldIdx].pathRef);
+            int currentFieldIdx = AI.finishedPathfindingTask.sectorPath[matchedFlowFieldIdx].pathRef;
+            int oldFieldIdx = currentActiveField.pathRef;
+            Debug.Log($"AI {i} bumping flow fields. New flow field {currentFieldIdx}, old flow field {oldFieldIdx}");
+            for (int j = oldFieldIdx; j < currentFieldIdx; j++)
+            {
+                AI.finishedPathfindingTask.sectorPath.RemoveAt(0);
+                AI.finishedPathfindingTask.sectorVectorPath.RemoveAt(0);
+            }
+
+            currentActiveField = AI.finishedPathfindingTask.sectorPath[0];
+
+            Debug.Log(currentActiveField.pos.x + " " + currentActiveField.pos.y);
+
+            Vector2 newSectorCenter = new Vector2(currentActiveField.pos.x + (flowFieldSize / 2), currentActiveField.pos.y + (flowFieldSize / 2));
+
+            sectorOrigin = findSectorOrigin(new Vector2(currentActiveField.pos.x, currentActiveField.pos.y));
+            localIdx = WorldToLocalFieldIndex(AI.obj.transform.position, sectorOrigin);
+            Debug.Log($"Current active field : {currentActiveField.pos.x}, {currentActiveField.pos.y}. Sector origin calculated at : {sectorOrigin}. localIdx calculated at : {localIdx}");
+            if (localIdx.x > flowFieldSize || localIdx.x < 0 || localIdx.y > flowFieldSize || localIdx.y < 0)
+            {
+
+                Vector2 nudgeDir = newSectorCenter - AIPos;
+                Debug.Log($"Nudging AI {i} (Position {AI.obj.transform.position}) towards position {newSectorCenter} with nudge of {nudgeDir.normalized}");
+                AI.obj.transform.Translate(nudgeDir.normalized * nudgeForce * Time.deltaTime);
+            }
+        }
+        else
+        {
+            matchedFlowFieldIdx = AI.finishedPathfindingTask.cachedSectorPath.FindIndex(x => x.nodeX == target.x && x.nodeY == target.y);
+            if (matchedFlowFieldIdx != -1)
+            {
+                string cachedSectorsDebug = AI.finishedPathfindingTask.cachedSectorPath[0].pathRef.ToString();
+                for (int j = 1; j < AI.finishedPathfindingTask.cachedSectorPath.Count; j++)
+                {
+                    cachedSectorsDebug = cachedSectorsDebug + ", " + AI.finishedPathfindingTask.cachedSectorPath[j].pathRef.ToString();
+                }
+                Debug.Log($"AI {i} Cached sectors: {cachedSectorsDebug}");
+                Debug.Log($"Matched flow field idx : {matchedFlowFieldIdx}/{AI.finishedPathfindingTask.sectorVectorPath.Count}/{AI.finishedPathfindingTask.sectorPath.Count}");
+                Debug.Log($"Sector cache count: {AI.finishedPathfindingTask.cachedSectorPath.Count}");
+                Debug.Log($"Pathref new {AI.finishedPathfindingTask.cachedSectorPath[matchedFlowFieldIdx].pathRef}, pathref old {currentActiveField.pathRef}");
+                for (int j = currentActiveField.pathRef; j >= AI.finishedPathfindingTask.cachedSectorPath[matchedFlowFieldIdx].pathRef + 1; j--)
+                {
+                    Debug.Log(j);
+                    AI.finishedPathfindingTask.sectorPath.Insert(0, AI.finishedPathfindingTask.cachedSectorPath[j - 1]);
+                    AI.finishedPathfindingTask.sectorVectorPath.Insert(0, AI.finishedPathfindingTask.cachedSectorVectorPath[j - 1]);
+
+                }
+
+
+                currentActiveField = AI.finishedPathfindingTask.sectorPath[0];
+
+
+                Vector2 newSectorCenter = new Vector2(currentActiveField.pos.x + (flowFieldSize / 2), currentActiveField.pos.y + (flowFieldSize / 2));
+
+                sectorOrigin = findSectorOrigin(new Vector2(currentActiveField.pos.x, currentActiveField.pos.y));
+                localIdx = WorldToLocalFieldIndex(AI.obj.transform.position, sectorOrigin);
+                Debug.Log($"Current active field : {currentActiveField.pos.x}, {currentActiveField.pos.y}. Sector origin calculated at : {sectorOrigin}. localIdx calculated at : {localIdx}");
+                if (localIdx.x > flowFieldSize || localIdx.x < 0 || localIdx.y > flowFieldSize || localIdx.y < 0)
+                {
+
+                    Vector2 nudgeDir = newSectorCenter - AIPos;
+                    Debug.Log($"Nudging AI {i} (Position {AI.obj.transform.position}) towards position {newSectorCenter} with nudge of {nudgeDir.normalized}");
+                    AI.obj.transform.Translate(nudgeDir.normalized * nudgeForce * Time.deltaTime);
+                }
+            }
+            else
+            {
+                Vector2 SectorCenter = new Vector2(currentActiveField.pos.x + (flowFieldSize / 2), currentActiveField.pos.y + (flowFieldSize / 2));
+                Vector2 nudgeDir = SectorCenter - AIPos;
+                Debug.Log($"Nudging AI {i} (Position {AI.obj.transform.position}) towards position {SectorCenter} with nudge of {nudgeDir.normalized}");
+                AI.obj.transform.Translate(nudgeDir.normalized * nudgeForce * Time.deltaTime);
+            }
+
+        }
+        AIs[i] = AI;
+    }
+    [BurstCompile]
+    public struct DetectNearbyJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<float3> allPositions;
+        [ReadOnly] public float detectionRadiusSq;
+        public NativeArray<float2> nearbyMap;
+
+        public void Execute(int i)
+        {
+            float2 myPos = allPositions[i].xy;
+            float2 separationVec = float2.zero;
+
+            for (int j = 0; j < allPositions.Length; j++)
+            {
+                if (i == j) continue;
+
+                float dSq = math.distancesq(myPos, allPositions[j].xy);
+
+                if (dSq <= 4.0f && dSq > 0.001f)
+                {
+                    //Debug.Log($"AI {i} found AI {j} nearby at position {myPos.x}, {myPos.y}. Other AI at position {allPositions[j].x}, {allPositions[j].y}");
+                    float2 diff = myPos - allPositions[j].xy;
+
+                    separationVec += diff / dSq;
+                }
+            }
+            nearbyMap[i] = separationVec;
+        }
     }
     public Path Pathfind(PathFindTSInput input)
     {
@@ -497,16 +689,17 @@ public class AIManager : MonoBehaviour
         List<Node> AStarFlowMapPath = AStar.FindPathAStar(requestData);
         if (AStarFlowMapPath == null)
         {
-            Debug.Log("A star pathfinding failed");
+            //Debug.Log("A star pathfinding failed");
             return null;
         }
         List<FlowFieldReturn> flowFieldsPath = new List<FlowFieldReturn>();
         List<Float2> sectorVectorPath = new List<Float2>();
+        List<int3> flowFieldIdxReferences = new List<int3>();
         for (int i = 0; i < AStarFlowMapPath.Count - 1; i++)
         {
             bool foundFlowField = false;
             Vector2 worldPos = AStarFlowMapPath[i].position;
-            Debug.Log("flow map path position " + worldPos + " flow map path dir " + AStarFlowMapPath[i].dir);
+            //Debug.Log("flow map path position " + worldPos + " flow map path dir " + AStarFlowMapPath[i].dir);
             Vector2 sectorIdx = findCurrentSector(worldPos);
             int sx = (int)sectorIdx.x;
             int sy = (int)sectorIdx.y;
@@ -520,7 +713,9 @@ public class AIManager : MonoBehaviour
                     if (selectedFlowField.dir == AStarFlowMapPath[i].dir)
                     {
                         flowFieldsPath.Add(selectedFlowField);
+                        flowFieldIdxReferences.Add(new int3(sx, sy, j));
                         foundFlowField = true;
+                        // //Debug.Log("Found existing flow field!");
                         break;
                     }
                 }
@@ -541,7 +736,7 @@ public class AIManager : MonoBehaviour
                     : new Vector2(input.flowFieldSize, input.nodeSize);
 
                 Float2Bounds targetBounds = new Float2Bounds(new Float2(targetCenter.x, targetCenter.y), new Float2(targetSize.x, targetSize.y));
-                Debug.Log($"Target bounds flow field {i}: Size: X: {targetSize.x}, Y: {targetSize.y}. Position: X: {targetCenter.x} Y: {targetCenter.y}. Dir: X: {dir.x} Y: {dir.y}");
+                //Debug.Log($"Target bounds flow field {i}: Size: X: {targetSize.x}, Y: {targetSize.y}. Position: X: {targetCenter.x} Y: {targetCenter.y}. Dir: X: {dir.x} Y: {dir.y}");
                 FlowField.FlowFieldRequestData request = new FlowField.FlowFieldRequestData
                 {
                     dir = dir,
@@ -554,22 +749,32 @@ public class AIManager : MonoBehaviour
                     obstacleMap = input.obstacleMapReturns[sx, sy].obstacleMapBool,
                     nodePosInTotalMap = new Vector2(sx, sy)
                 };
-                Debug.Log(input.obstacleMapReturns[sx, sy].obstacleMapBool.GetLength(0));
+                //Debug.Log(input.obstacleMapReturns[sx, sy].obstacleMapBool.GetLength(0));
                 FlowFieldReturn returnedFlowField = FlowField.FindFlowFieldToRect(request);
                 if (returnedFlowField != null)
                 {
+                    returnedFlowField.worldPos = sectorIdx;
+                    returnedFlowField.loopsSinceUpdated = 0;
+                    returnedFlowField.pos = sectorOrigin;
                     flowFieldsPath.Add(returnedFlowField);
                     sectorVectorPath.Add(new Vector2(sx, sy));
                 }
                 else
                 {
-                    Debug.LogError("Flow Field pathfinding failed!");
+                    //Debug.LogError("Flow Field pathfinding failed!");
                     return null;
                 }
 
             }
+            flowFieldsPath[i].pathRef = i;
         }
-        FlowFieldReturn destinationField = input.destinationFlowFields.Find(x => x.pos == Float2.ConvertToV2(input.TargetPos));
+        int index = input.destinationFlowFields.FindIndex(x => x.pos == Float2.ConvertToV2(input.TargetPos));
+        FlowFieldReturn destinationField = null;
+        if (index != -1)
+        {
+            destinationField = input.destinationFlowFields[index];
+        }
+
         if (destinationField == null)
         {
             Vector2 lastPathNodePos = AStarFlowMapPath[AStarFlowMapPath.Count - 1].position;
@@ -578,7 +783,6 @@ public class AIManager : MonoBehaviour
             int sy = (int)sectorIdx.y;
 
             Vector2 sectorOrigin = findSectorOrigin(new Vector2(sx, sy));
-
             FlowField.FlowFieldRequestData request = new FlowField.FlowFieldRequestData
             {
                 searchHeight = input.flowFieldSize + 1,
@@ -590,16 +794,23 @@ public class AIManager : MonoBehaviour
                 nodePosInTotalMap = new Vector2(sx, sy)
             };
             destinationField = FlowField.FindFlowFieldToPoint(request);
+            destinationField.loopsSinceUpdated = 0;
+            destinationField.pathRef = AStarFlowMapPath.Count - 1;
         }
         if (destinationField == null)
         {
-            Debug.Log("Unable to get destination flow field");
+            //Debug.Log("Unable to get destination flow field");
             return null;
         }
         flowFieldsPath.Add(destinationField);
         sectorVectorPath.Add(destinationField.pos);
+
         path.sectorVectorPath = sectorVectorPath;
         path.sectorPath = flowFieldsPath;
+        path.flowFieldIdxReferences = flowFieldIdxReferences;
+        path.destinationFlowFieldIdxReference = index;
+        path.cachedSectorPath = new List<FlowFieldReturn>();
+        path.cachedSectorVectorPath = new List<Float2>();
         return path;
 
 
@@ -616,10 +827,10 @@ public class AIManager : MonoBehaviour
         Vector3 p4 = position + rightOffset - upOffset;  // Bottom-Right
 
         // Draw the four lines connecting the corners
-        Debug.DrawLine(p1, p2, color); // Top
-        Debug.DrawLine(p2, p3, color); // Left
-        Debug.DrawLine(p3, p4, color); // Bottom
-        Debug.DrawLine(p4, p1, color); // Right
+        //Debug.DrawLine(p1, p2, color); // Top
+        //Debug.DrawLine(p2, p3, color); // Left
+        //Debug.DrawLine(p3, p4, color); // Bottom
+        //Debug.DrawLine(p4, p1, color); // Right
     }
     public bool Contains(Rect outerRect, Rect innerRect)
     {
@@ -659,7 +870,7 @@ public class AIManager : MonoBehaviour
                     request.targetPos.y < request.mapOrigin.y - 0.1f ||
                     request.targetPos.y > request.mapOrigin.y + request.searchHeight + 0.1f)
             {
-                Debug.LogError($"Target {request.targetPos} is outside search area. Origin: {request.mapOrigin}, Size: {request.searchWidth}");
+                //Debug.LogError($"Target {request.targetPos} is outside search area. Origin: {request.mapOrigin}, Size: {request.searchWidth}");
                 return null;
             }
 
@@ -689,7 +900,6 @@ public class AIManager : MonoBehaviour
             while (openNodes.Count > 0)
             {
                 FlowNode currentNode = openNodes.Dequeue();
-                FlowNode lowestCostNeighbor = new FlowNode { totalCost = Mathf.Infinity };
 
                 for (int dx = -1; dx <= 1; dx++)
                 {
@@ -704,7 +914,14 @@ public class AIManager : MonoBehaviour
                         {
                             if (request.obstacleMap[nx, ny]) continue;
 
-                            float moveCost = (dx != 0 && dy != 0) ? 1.41f : 1f; // Diagonal vs Straight
+                            float moveCost = (dx != 0 && dy != 0) ? 1.414f : 1.0f;
+
+                            Vector2 moveStep = new Vector2(dx, dy);
+                            if (Vector2.Dot(moveStep.normalized, request.dir) < 0.9f)
+                            {
+                                moveCost += 10.0f;
+                            }
+
                             float newCost = currentNode.totalCost + moveCost;
 
                             if (newCost < totalNodes[nx, ny].totalCost)
@@ -716,14 +933,19 @@ public class AIManager : MonoBehaviour
                     }
                 }
             }
+
             for (int x = 0; x < nodeGridWidth; x++)
             {
                 for (int y = 0; y < nodeGridHeight; y++)
                 {
-                    if (totalNodes[x, y].totalCost == 0) continue;
+                    if (totalNodes[x, y].totalCost == 0 || totalNodes[x, y].totalCost == float.MaxValue)
+                    {
+                        totalNodes[x, y].dir = request.dir;
+                        continue;
+                    }
 
                     float bestCost = totalNodes[x, y].totalCost;
-                    Vector2 bestDir = Vector2.zero;
+                    Vector2 bestDir = request.dir;
 
                     for (int dx = -1; dx <= 1; dx++)
                     {
@@ -733,7 +955,7 @@ public class AIManager : MonoBehaviour
                             int ny = y + dy;
                             if (nx >= 0 && nx < nodeGridWidth && ny >= 0 && ny < nodeGridHeight)
                             {
-                                if (totalNodes[nx, ny].totalCost < bestCost)
+                                if (totalNodes[nx, ny].totalCost < bestCost - 0.01f)
                                 {
                                     bestCost = totalNodes[nx, ny].totalCost;
                                     bestDir = new Vector2(dx, dy);
@@ -771,44 +993,35 @@ public class AIManager : MonoBehaviour
 
             if (request.dir == new Vector2(1, 0))
             {
-                int x = nodeGridWidth - 1;
                 for (int y = 0; y < nodeGridHeight; y++)
                 {
-                    totalNodes[x, y].totalCost = 0;
-                    openNodes.Enqueue(totalNodes[x, y]);
+                    totalNodes[nodeGridWidth - 1, y].totalCost = 0;
+                    openNodes.Enqueue(totalNodes[nodeGridWidth - 1, y]);
                 }
             }
             else if (request.dir == new Vector2(-1, 0))
             {
-                int x = 0;
                 for (int y = 0; y < nodeGridHeight; y++)
                 {
-                    totalNodes[x, y].totalCost = 0;
-                    openNodes.Enqueue(totalNodes[x, y]);
+                    totalNodes[0, y].totalCost = 0;
+                    openNodes.Enqueue(totalNodes[0, y]);
                 }
             }
             else if (request.dir == new Vector2(0, 1))
             {
-                int y = nodeGridHeight - 1;
-                for (int x = 0; x < nodeGridHeight; x++)
+                for (int x = 0; x < nodeGridWidth; x++)
                 {
-                    totalNodes[x, y].totalCost = 0;
-                    openNodes.Enqueue(totalNodes[x, y]);
+                    totalNodes[x, nodeGridHeight - 1].totalCost = 0;
+                    openNodes.Enqueue(totalNodes[x, nodeGridHeight - 1]);
                 }
             }
             else if (request.dir == new Vector2(0, -1))
             {
-                int y = 0;
-                for (int x = 0; x < nodeGridHeight; x++)
+                for (int x = 0; x < nodeGridWidth; x++)
                 {
-                    totalNodes[x, y].totalCost = 0;
-                    openNodes.Enqueue(totalNodes[x, y]);
+                    totalNodes[x, 0].totalCost = 0;
+                    openNodes.Enqueue(totalNodes[x, 0]);
                 }
-            }
-            else
-            {
-                Debug.LogError("No direction");
-                return null;
             }
             //float bMinX = request.targetBounds.position.x - (request.targetBounds.size.x * 0.5f);
             //float bMaxX = request.targetBounds.position.x + (request.targetBounds.size.x * 0.5f);
@@ -921,12 +1134,12 @@ public class AIManager : MonoBehaviour
             int nodeGridHeight = pathData.obstacleMap.GetLength(1);
             Vector2 gridWorldOrigin = pathData.mapOrigin;
             totalNodes = new Node[nodeGridWidth, nodeGridHeight];
-            //Debug.Log($"Node width: {nodeGridWidth}, height: {halfHeight}. Pathdata width: {pathData.searchWidth}, height: {pathData.searchHeight}");
+            // //Debug.Log($"Node width: {nodeGridWidth}, height: {halfHeight}. Pathdata width: {pathData.searchWidth}, height: {pathData.searchHeight}");
             // ensure start is in bounds (recalculate origin if needed)
             if (pathData.AIPos.x < gridWorldOrigin.x || pathData.AIPos.x > gridWorldOrigin.x + pathData.searchWidth ||
                 pathData.AIPos.y < gridWorldOrigin.y || pathData.AIPos.y > gridWorldOrigin.y + pathData.searchHeight)
             {
-                //Debug.LogError($"AI {pathData.AIIndex}'s start position {pathData.AIPos} is outside search area origin {gridWorldOrigin} size ({pathData.searchWidth},{pathData.searchHeight}). Expand search area or recenter.");
+                // //Debug.LogError($"AI {pathData.AIIndex}'s start position {pathData.AIPos} is outside search area origin {gridWorldOrigin} size ({pathData.searchWidth},{pathData.searchHeight}). Expand search area or recenter.");
                 return null;
             }
             for (int x = 0; x < nodeGridWidth; x++)
@@ -1046,7 +1259,7 @@ public class AIManager : MonoBehaviour
 
             if (targetNode == null)
             {
-                Debug.LogWarning("No path found to the target. Possible causes: search area too small, obstacles block the route, or nodeSize is too large.");
+                //Debug.LogWarning("No path found to the target. Possible causes: search area too small, obstacles block the route, or nodeSize is too large.");
                 return null;
             }
 

@@ -40,6 +40,7 @@ public enum PathfindingStatus
 public class PathFinderAI
 {
     public PathfindingStatus pathStatus;
+    public Rigidbody2D rb;
     public GameObject obj;
     public bool needsPath;
     public float velocity;
@@ -57,9 +58,7 @@ public class PathFinderAI
     public Task<bool[,]> obstacleReturn;
     public Task<Path> pathfindingTask;
     public Path finishedPathfindingTask;
-    public Task<List<Node>> aStarPathfindingTask;
-    public List<Node> finishedAStarPathfindingTask;
-    public bool usingAStarPath;
+
     public CustomObject objectReference;
     public void PathFind(Vector2 destination)
     {
@@ -87,11 +86,15 @@ public class PathFindTSInput
 }
 public class FlowFieldReturn
 {
+    public Vector2 worldPos;
+    public int loopsSinceUsed;
+    public int loopsSinceUpdated;
     public int nodeX;
     public int nodeY;
     public FlowNode[,] field;
     public Vector2 dir;
     public Vector2 pos;
+    public int pathRef;
 }
 public class FlowNode
 {
@@ -103,8 +106,12 @@ public class FlowNode
 public class Path
 {
     public PathFinderAI AI;
+    public List<int3> flowFieldIdxReferences;
+    public int destinationFlowFieldIdxReference;
     public List<FlowFieldReturn> sectorPath;
     public List<Float2> sectorVectorPath;
+    public List<Float2> cachedSectorVectorPath;
+    public List<FlowFieldReturn> cachedSectorPath;
 
 }
 public class AIPathFindingData
@@ -139,6 +146,10 @@ public struct Float2
     public static Vector2 ConvertToV2(Float2 fr)
     {
         return new Vector2(fr.x, fr.y);
+    }
+    public static Float2 ConvertToF2(Vector2 fr)
+    {
+        return new Float2(fr.x, fr.y);
     }
     public static Float2 Lerp(Float2 a, Float2 b, float t)
     {
@@ -460,11 +471,25 @@ public static class DetectObstaclesInPosition
             Debug.LogError("No objects found in any lists, maybe this was an accidental call?");
             return null;
         }
-        if (obstacles.Count > 0)
+        foreach (var target in mapTargets)
         {
-
+            if (math.abs(target.position.x) > 100000 || math.abs(target.position.y) > 100000)
+            {
+                Debug.LogError($"CRITICAL: MapTarget at {target.position} is way too far away!");
+            }
         }
 
+        foreach (var other in others)
+        {
+            if (other.size.x > 10000 || other.size.y > 10000)
+            {
+                Debug.LogError($"CRITICAL: Object {other} has a massive size: {other.size}");
+            }
+            if (math.abs(other.position.x) > 100000)
+            {
+                Debug.LogError($"CRITICAL: Object {other} is at a crazy position: {other.position}");
+            }
+        }
         for (int i = 0; i < mapTargets.Count; i++)
         {
             boundingBox.Encapsulate(new Float2Bounds(mapTargets[i].position, new Float2(5, 5)));
@@ -482,6 +507,8 @@ public static class DetectObstaclesInPosition
         //Debug.Log($"Bounding box size: {size.x}, {size.y}, Origin is {leftBCorner.x}, {leftBCorner.y}");
         int nodeGridWidth = Mathf.Max(1, Mathf.CeilToInt((size.x * 2) / nodeSize));
         int nodeGridHeight = Mathf.Max(1, Mathf.CeilToInt((size.y * 2) / nodeSize));
+        long totalCells = (long)nodeGridWidth * nodeGridHeight;
+        Debug.Log($"Attempting to allocate a grid of {nodeGridWidth}x{nodeGridHeight} ({totalCells} cells)");
         CompleteObstacleMapReturn objMap = new CompleteObstacleMapReturn
         {
             obstacleMap = new List<Obstacle>[nodeGridWidth, nodeGridHeight],
@@ -490,14 +517,6 @@ public static class DetectObstaclesInPosition
             startArea = leftBCorner,
             bounds = boundingBox
         };
-        for (int x = 0; x < nodeGridWidth; x++)
-        {
-            for (int y = 0; y < nodeGridHeight; y++)
-            {
-                objMap.obstacleMap[x, y] = new List<Obstacle>();
-                objMap.obstacleMapBool[x, y] = false;
-            }
-        }
         for (int i = 0; i < obstacles.Count; i++)
         {
             Float2 obsMin = obstacles[i].position - (obstacles[i].size / 2f);
@@ -519,6 +538,10 @@ public static class DetectObstaclesInPosition
             {
                 for (int y = startY; y < endY; y++)
                 {
+                    if (objMap.obstacleMap[x, y] == null)
+                    {
+                        objMap.obstacleMap[x, y] = new List<Obstacle>();
+                    }
                     objMap.obstacleMap[x, y].Add(obstacles[i]);
                     objMap.obstacleMapBool[x, y] = true;
                     //Debug.Log($"Obstacle detected at {x}, {y}");

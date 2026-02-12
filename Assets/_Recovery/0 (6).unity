@@ -241,7 +241,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95f60b4eb08ad154cb3efc5bac237cb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  AINumber: 1
+  AINumber: 300
   AIPrefab: {fileID: 271389420182585176, guid: 9bd06c8110ea6af4c89e76a62d14ef3d, type: 3}
   targets:
   - {fileID: 218950217}
@@ -249,11 +249,11 @@ MonoBehaviour:
   - {fileID: 1782162660}
   nodeSize: 1
   loopsBeforeUpdate: 50
-  AISpeed: 3
+  AISpeed: 15
   averageAITaskTime: 0
   flowFieldSize: 20
   AITargets: []
-  nudgeForce: 1
+  nudgeForce: 2
   loopsPerObstacleMap: 1000
 --- !u!224 &496435342
 RectTransform:
@@ -726,7 +726,7 @@ Transform:
   m_GameObject: {fileID: 763915684}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 16.5, y: -93.5, z: 0}
+  m_LocalPosition: {x: -183, y: -9.49, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
