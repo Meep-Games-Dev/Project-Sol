@@ -1,7 +1,11 @@
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -18,16 +22,17 @@ public class BoundsObj
     public Rect bounds;
     public int boundsGameObjID;
 }
-public class Node
+public struct Node
 {
     public Vector2 position;
     public float startCost;
     public float targetDistance;
     public float totalCost;
     public bool evaluated;
-    public Node parent;
-    public Node child;
+    public int2 parentIdx;
+    public int2 childIdx;
     public Vector2 dir;
+    public int idx;
 }
 public enum PathfindingStatus
 {
@@ -67,22 +72,84 @@ public class PathFinderAI
         targetSet = true;
     }
 }
-public class PathFindTSInput
+public struct PathFindTSInput
 {
     //Used for inputting thread-safe variables into the background "pathfind()" function
+
+
     public Float2 AIPos;
     public Float2 TargetPos;
-    public List<Obstacle> obstaclesInScene;
-    public List<MapTarget> mapTargetsInScene;
-    public List<CustomObject> objectsInScene;
-    public List<FlowFieldReturn>[,] flowFieldReturns;
+    public NativeArray<Obstacle> obstaclesInScene;
+    public NativeArray<MapTarget> mapTargetsInScene;
+    public NativeArray<CustomObject> objectsInScene;
+    public FlowFieldReturnStructCollection flowFieldReturns;
     public int flowFieldSize;
     public Float2Bounds mapbounds;
-    public CompleteObstacleMapReturn lowQualityMapReturn;
-    public CompleteObstacleMapReturn[,] obstacleMapReturns;
+    public CompleteObstacleMapReturnStruct lowQualityMapReturn;
+    public CompleteObstacleStructCollection obstacleMapReturns;
     public float nodeSize;
-    public List<FlowFieldReturn> destinationFlowFields;
+    public FlowFieldReturnStructCollection destinationFlowFields;
 
+}
+public struct FlowFieldReturnStructCollection
+{
+    public NativeArray<float2> worldPos;
+    public NativeArray<int> loopsSinceUsed;
+    public NativeArray<int> loopsSinceUpdated;
+    public NativeArray<int> nodeX;
+    public NativeArray<int> nodeY;
+    public NativeArray<float2> dir;
+    public NativeArray<float2> pos;
+    public NativeArray<int> pathRef;
+
+    public NativeArray<FlowNode> flattenedFields;
+    public NativeArray<int2> flowFieldOffsets;
+    public NativeArray<int2> tileOffsets;
+
+    public int totalFields;
+    public int2 gridSize;
+
+    public void Dispose()
+    {
+        if (worldPos.IsCreated) worldPos.Dispose();
+        if (loopsSinceUsed.IsCreated) loopsSinceUsed.Dispose();
+        if (loopsSinceUpdated.IsCreated) loopsSinceUpdated.Dispose();
+        if (nodeX.IsCreated) nodeX.Dispose();
+        if (nodeY.IsCreated) nodeY.Dispose();
+        if (dir.IsCreated) dir.Dispose();
+        if (pos.IsCreated) pos.Dispose();
+        if (pathRef.IsCreated) pathRef.Dispose();
+        if (flattenedFields.IsCreated) flattenedFields.Dispose();
+        if (flowFieldOffsets.IsCreated) flowFieldOffsets.Dispose();
+        if (tileOffsets.IsCreated) tileOffsets.Dispose();
+    }
+}
+public struct FlowFieldReturnStruct
+{
+    public bool failed;
+    public float2 worldPos;
+    public int loopsSinceUsed;
+    public int loopsSinceUpdated;
+    public int nodeX;
+    public int nodeY;
+    //this must be fixed, cannot nest nativelists
+    public NativeArray<FlowNode> flattenedField;
+    public float2 dir;
+    public float2 pos;
+    public int pathRef;
+}
+
+public struct FlowFieldReturnSlice
+{
+    public float2 worldPos;
+    public int loopsSinceUsed;
+    public int loopsSinceUpdated;
+    public int nodeX;
+    public int nodeY;
+    public NativeSlice<FlowNode> flattenedField;
+    public float2 dir;
+    public float2 pos;
+    public int pathRef;
 }
 public class FlowFieldReturn
 {
@@ -96,12 +163,320 @@ public class FlowFieldReturn
     public Vector2 pos;
     public int pathRef;
 }
-public class FlowNode
+public struct FlowFieldSliceGroup
+{
+    public NativeSlice<float2> worldPositions;
+    public NativeSlice<int2> nodeOffsets;
+    public NativeSlice<float2> dir;
+    public NativeSlice<int> nodeX;
+    public NativeSlice<int> nodeY;
+    public NativeSlice<float2> pos;
+}
+public static class FlowFieldUtils
+{
+    public static FlowFieldReturnStructCollection FlattenMultipleFlowFieldReturns(NativeArray<FlowFieldReturnStruct> array)
+    {
+        int size = array.Length;
+        int totalElements = 0;
+        for (int i = 0; i < size; i++)
+        {
+            totalElements += array[i].flattenedField.Length;
+        }
+
+        FlowFieldReturnStructCollection collection = new FlowFieldReturnStructCollection
+        {
+            worldPos = new NativeArray<float2>(size, Allocator.Persistent),
+            totalFields = size,
+            loopsSinceUpdated = new NativeArray<int>(size, Allocator.Persistent),
+            loopsSinceUsed = new NativeArray<int>(size, Allocator.Persistent),
+            dir = new NativeArray<float2>(size, Allocator.Persistent),
+            flattenedFields = new NativeArray<FlowNode>(totalElements, Allocator.Persistent),
+            flowFieldOffsets = new NativeArray<int2>(size, Allocator.Persistent),
+            nodeX = new NativeArray<int>(size, Allocator.Persistent),
+            nodeY = new NativeArray<int>(size, Allocator.Persistent),
+            pathRef = new NativeArray<int>(size, Allocator.Persistent),
+            pos = new NativeArray<float2>(size, Allocator.Persistent)
+        };
+
+        int count = 0;
+        for (int i = 0; i < size; i++)
+        {
+            collection.worldPos[i] = array[i].worldPos;
+            collection.pos[i] = array[i].pos;
+            collection.dir[i] = array[i].dir;
+            collection.pathRef[i] = array[i].pathRef;
+            collection.loopsSinceUpdated[i] = array[i].loopsSinceUpdated;
+            collection.loopsSinceUsed[i] = array[i].loopsSinceUsed;
+            collection.nodeX[i] = array[i].nodeX;
+            collection.nodeY[i] = array[i].nodeY;
+
+            int length = array[i].flattenedField.Length;
+            collection.flowFieldOffsets[i] = new int2(count, length);
+
+            if (length > 0)
+            {
+                NativeArray<FlowNode>.Copy(array[i].flattenedField, 0, collection.flattenedFields, count, length);
+            }
+            if (array[i].flattenedField.IsCreated)
+            {
+                array[i].flattenedField.Dispose();
+            }
+
+            count += length;
+        }
+        return collection;
+    }
+
+    public static FlowFieldReturnSlice RetrieveFlowFieldReturn(FlowFieldReturnStructCollection collection, int idx)
+    {
+        return new FlowFieldReturnSlice
+        {
+            dir = collection.dir[idx],
+            loopsSinceUpdated = collection.loopsSinceUpdated[idx],
+            loopsSinceUsed = collection.loopsSinceUsed[idx],
+            nodeX = collection.nodeX[idx],
+            nodeY = collection.nodeY[idx],
+            pathRef = collection.pathRef[idx],
+            pos = collection.pos[idx],
+            worldPos = collection.worldPos[idx],
+            flattenedField = new NativeSlice<FlowNode>(collection.flattenedFields, collection.flowFieldOffsets[idx].x, collection.flowFieldOffsets[idx].y),
+        };
+    }
+
+    public static int FindIndexPositionNative(NativeArray<float2> list, Vector2 target)
+    {
+        for (int i = 0; i < list.Length; i++)
+        {
+            if (new Vector2(list[i].x, list[i].y) == target)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+    public static FlowFieldReturnStruct FlowFieldReturnToStruct(FlowFieldReturn flr)
+    {
+        return new FlowFieldReturnStruct
+        {
+            worldPos = flr.worldPos,
+            loopsSinceUpdated = flr.loopsSinceUpdated,
+            loopsSinceUsed = flr.loopsSinceUsed,
+            nodeX = flr.nodeX,
+            nodeY = flr.nodeY,
+            flattenedField = FlattenFlowNodeArray(flr.field),
+            dir = flr.dir,
+            pos = flr.pos,
+        };
+    }
+
+    public static FlowFieldReturn StructToFlowFieldReturn(FlowFieldReturnStruct flrs, int size)
+    {
+        return new FlowFieldReturn
+        {
+            worldPos = flrs.worldPos,
+            loopsSinceUpdated = flrs.loopsSinceUpdated,
+            loopsSinceUsed = flrs.loopsSinceUsed,
+            nodeX = flrs.nodeX,
+            nodeY = flrs.nodeY,
+            field = ReconstructFlowNodeArray(flrs.flattenedField.ToList(), size),
+            dir = flrs.dir,
+            pos = flrs.pos
+        };
+    }
+    ///<summary>
+    ///Reconstructs a 2D array from a 1D array. Assumes that the size is equal for both x and y
+    /// </summary>
+    public static FlowNode[,] ReconstructFlowNodeArray(List<FlowNode> flattenedArray, int size)
+    {
+        if (size * size > flattenedArray.Count || size * size < flattenedArray.Count)
+        {
+            Debug.LogError("Size is not equal to input array size. Check that you have the correct variables");
+            return null;
+        }
+        FlowNode[,] returnArray = new FlowNode[size, size];
+        for (int x = 0; x < size; x++)
+        {
+            for (int y = 0; y < size; y++)
+            {
+                returnArray[x, y] = flattenedArray[y * size + x];
+            }
+        }
+        return returnArray;
+
+    }
+    ///<summary>
+    ///Flattens a 2D array into a 1D array. IMPORTANT: remember to dispose of the result when you are done to avoid a leak
+    /// </summary>
+    public static NativeArray<FlowNode> FlattenFlowNodeArray(FlowNode[,] array)
+    {
+
+        int length = array.GetLength(0) * array.GetLength(1);
+        NativeArray<FlowNode> newArray = new NativeArray<FlowNode>(length, Allocator.Persistent);
+        for (int i = 0; i < length; i++)
+        {
+            int x = i % array.GetLength(0);
+            int y = i / array.GetLength(0);
+            newArray[i] = array[x, y];
+        }
+        return newArray;
+    }
+    public static NativeSlice<float2> GetTileWorldPositions(FlowFieldReturnStructCollection collection, int2 gridPos)
+    {
+        int flatTileIdx = gridPos.y * collection.gridSize.x + gridPos.x;
+        int2 range = collection.tileOffsets[flatTileIdx];
+        return new NativeSlice<float2>(collection.worldPos, range.x, range.y);
+    }
+    public static FlowFieldReturnStruct GetFlowFieldMetadataOnly(FlowFieldReturnStructCollection collection, int globalFieldIndex)
+    {
+        return new FlowFieldReturnStruct
+        {
+            worldPos = collection.worldPos[globalFieldIndex],
+            dir = collection.dir[globalFieldIndex],
+            pos = collection.pos[globalFieldIndex],
+            pathRef = collection.pathRef[globalFieldIndex],
+            loopsSinceUpdated = collection.loopsSinceUpdated[globalFieldIndex],
+            loopsSinceUsed = collection.loopsSinceUsed[globalFieldIndex],
+            nodeX = collection.nodeX[globalFieldIndex],
+            nodeY = collection.nodeY[globalFieldIndex],
+        };
+    }
+    /// <summary>
+    /// Retrieves all FlowField metadata and node data for a specific grid tile.
+    /// </summary>
+    public static FlowFieldSliceGroup GetFlowFieldsAtTile(FlowFieldReturnStructCollection collection, int x, int y)
+    {
+        int flatTileIdx = y * collection.gridSize.x + x;
+        int2 tileRange = collection.tileOffsets[flatTileIdx];
+
+        if (tileRange.y == 0) return default;
+
+        return new FlowFieldSliceGroup
+        {
+            worldPositions = new NativeSlice<float2>(collection.worldPos, tileRange.x, tileRange.y),
+            nodeOffsets = new NativeSlice<int2>(collection.flowFieldOffsets, tileRange.x, tileRange.y),
+            dir = new NativeSlice<float2>(collection.dir, tileRange.x, tileRange.y),
+            nodeX = new NativeSlice<int>(collection.nodeX, tileRange.x, tileRange.y),
+            nodeY = new NativeSlice<int>(collection.nodeY, tileRange.x, tileRange.y),
+            pos = new NativeSlice<float2>(collection.pos, tileRange.x, tileRange.y),
+        };
+    }
+
+    /// <summary>
+    /// Retrieves the actual FlowNode grid for a specific field within a group.
+    /// </summary>
+    public static NativeSlice<FlowNode> GetNodesForField(FlowFieldReturnStructCollection collection, int2 fieldOffset)
+    {
+        return new NativeSlice<FlowNode>(collection.flattenedFields, fieldOffset.x, fieldOffset.y);
+    }
+    /// <summary>
+    /// Returns a nested native array of flow field structs. IMPORTANT: remember to dispose of the result when you are done to avoid a leak
+    /// </summary>
+    /// <param name="list"></param>
+    /// <returns></returns>
+    public static FlowFieldReturnStructCollection Multiple2DFlowFieldReturnToStruct(List<FlowFieldReturn>[,] list)
+    {
+        int rows = list.GetLength(0);
+        int cols = list.GetLength(1);
+        int totalTiles = rows * cols;
+
+        int totalFields = 0;
+        int totalNodes = 0;
+        for (int x = 0; x < rows; x++)
+        {
+            for (int y = 0; y < cols; y++)
+            {
+                var tile = list[x, y];
+                totalFields += tile.Count;
+                foreach (var flr in tile)
+                {
+                    totalNodes += flr.field.GetLength(0) * flr.field.GetLength(1);
+                }
+            }
+        }
+        var collection = new FlowFieldReturnStructCollection
+        {
+            worldPos = new NativeArray<float2>(totalFields, Allocator.Persistent),
+            loopsSinceUsed = new NativeArray<int>(totalFields, Allocator.Persistent),
+            loopsSinceUpdated = new NativeArray<int>(totalFields, Allocator.Persistent),
+            nodeX = new NativeArray<int>(totalFields, Allocator.Persistent),
+            nodeY = new NativeArray<int>(totalFields, Allocator.Persistent),
+            dir = new NativeArray<float2>(totalFields, Allocator.Persistent),
+            pos = new NativeArray<float2>(totalFields, Allocator.Persistent),
+            pathRef = new NativeArray<int>(totalFields, Allocator.Persistent),
+
+            flattenedFields = new NativeArray<FlowNode>(totalNodes, Allocator.Persistent),
+            flowFieldOffsets = new NativeArray<int2>(totalFields, Allocator.Persistent),
+            tileOffsets = new NativeArray<int2>(totalTiles, Allocator.Persistent),
+
+            totalFields = totalFields,
+            gridSize = new int2(rows, cols)
+        };
+
+        int fieldPtr = 0;
+        int nodePtr = 0;
+        for (int y = 0; y < cols; y++)
+        {
+            for (int x = 0; x < rows; x++)
+            {
+                var currentTile = list[x, y];
+                int tileStartInFields = fieldPtr;
+
+                foreach (var flr in currentTile)
+                {
+                    collection.worldPos[fieldPtr] = flr.worldPos;
+                    collection.loopsSinceUsed[fieldPtr] = flr.loopsSinceUsed;
+                    collection.loopsSinceUpdated[fieldPtr] = flr.loopsSinceUpdated;
+                    collection.nodeX[fieldPtr] = flr.nodeX;
+                    collection.nodeY[fieldPtr] = flr.nodeY;
+                    collection.dir[fieldPtr] = flr.dir;
+                    collection.pos[fieldPtr] = flr.pos;
+                    collection.pathRef[fieldPtr] = flr.pathRef;
+
+                    int nodeStartInMegabuffer = nodePtr;
+                    var grid = flr.field;
+                    int fW = grid.GetLength(0);
+                    int fH = grid.GetLength(1);
+
+                    for (int fy = 0; fy < fH; fy++)
+                    {
+                        for (int fx = 0; fx < fW; fx++)
+                        {
+                            collection.flattenedFields[nodePtr++] = grid[fx, fy];
+                        }
+                    }
+
+                    collection.flowFieldOffsets[fieldPtr] = new int2(nodeStartInMegabuffer, nodePtr - nodeStartInMegabuffer);
+                    fieldPtr++;
+                }
+                collection.tileOffsets[y * rows + x] = new int2(tileStartInFields, fieldPtr - tileStartInFields);
+            }
+        }
+        return collection;
+    }
+}
+//public struct NativeFlowFieldCollection : IDisposable
+//{
+//    public NativeArray<FlowFieldReturnStruct> Data;
+//    /// <summary>
+//    /// Index into here to get values from data. structed as: start index, count
+//    /// </summary>
+//    public NativeArray<int2> Offsets;
+//    public int2 size;
+
+//    public void Dispose()
+//    {
+//        if (Data.IsCreated) Data.Dispose();
+//        if (Offsets.IsCreated) Offsets.Dispose();
+//    }
+//}
+
+public struct FlowNode
 {
     public Vector2 position;
-    public Vector2 gridPos;
+    public int2 gridPos;
     public float totalCost;
     public Vector2 dir;
+    public int idx;
 }
 public class Path
 {
@@ -109,10 +484,56 @@ public class Path
     public List<int3> flowFieldIdxReferences;
     public int destinationFlowFieldIdxReference;
     public List<FlowFieldReturn> sectorPath;
-    public List<Float2> sectorVectorPath;
-    public List<Float2> cachedSectorVectorPath;
     public List<FlowFieldReturn> cachedSectorPath;
 
+}
+
+public struct NativePath
+{
+    public NativeList<int3> flowFieldIdxReferences;
+    public int destinationFlowFieldIdxReference;
+    public FlowFieldReturnStructCollection sectorPath;
+    public int sectorSize;
+
+    public static implicit operator Path(NativePath nativePath)
+    {
+        Path managedPath = new Path();
+        managedPath.sectorPath = new List<FlowFieldReturn>();
+        for (int i = 0; i < nativePath.flowFieldIdxReferences.Length; i++)
+        {
+            int3 reference = nativePath.flowFieldIdxReferences[i];
+
+            int flatTileIdx = reference.y * nativePath.sectorPath.gridSize.x + reference.x;
+            int globalIdx = nativePath.sectorPath.tileOffsets[flatTileIdx].x + reference.z;
+
+            FlowFieldReturnStruct field = FlowFieldUtils.GetFlowFieldMetadataOnly(nativePath.sectorPath, globalIdx);
+
+            int2 nodeRange = nativePath.sectorPath.flowFieldOffsets[globalIdx];
+            NativeSlice<FlowNode> nodeSlice = new NativeSlice<FlowNode>(nativePath.sectorPath.flattenedFields, nodeRange.x, nodeRange.y);
+
+            field.flattenedField = new NativeArray<FlowNode>(nodeSlice.Length, Allocator.Persistent);
+            field.flattenedField.CopyFrom(nodeSlice);
+
+            managedPath.sectorPath.Add(FlowFieldUtils.StructToFlowFieldReturn(field, nativePath.sectorSize));
+        }
+
+        if (nativePath.destinationFlowFieldIdxReference != -1)
+        {
+            managedPath.destinationFlowFieldIdxReference = nativePath.destinationFlowFieldIdxReference;
+
+        }
+
+        return managedPath;
+    }
+}
+public struct PathReturn
+{
+    public bool failed;
+    public PathFinderAI AI;
+    public List<int3> flowFieldIdxReferences;
+    public int destinationFlowFieldIdxReference;
+    public List<FlowFieldReturn> sectorPath;
+    public List<Float2> sectorVectorPath;
 }
 public class AIPathFindingData
 {
@@ -143,6 +564,10 @@ public struct Float2
     {
         return new Vector2(fr.x, fr.y);
     }
+    public static implicit operator int2(Float2 fr)
+    {
+        return new int2(Mathf.RoundToInt(fr.x), Mathf.RoundToInt(fr.y));
+    }
     public static Vector2 ConvertToV2(Float2 fr)
     {
         return new Vector2(fr.x, fr.y);
@@ -161,6 +586,8 @@ public struct Float2
     {
         return new Float2(a.x + b.x, a.y + b.y);
     }
+
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Float2 operator -(Float2 a, Float2 b)
@@ -313,12 +740,12 @@ public struct Float2Bounds
         Encapsulate(bounds.position + bounds.size);
     }
 }
-public class CustomObject
+public struct CustomObject
 {
     public Float2 position;
     public Float2 size;
     public float instanceID;
-    public string name;
+    public FixedString32Bytes name;
 }
 public static class DetectObstaclesInPosition
 {
@@ -356,7 +783,7 @@ public static class DetectObstaclesInPosition
         else
         {
             Debug.LogError("ERR: OBJ " + obj.name + " DOES NOT INCLUDE A COLLIDER, PLEASE ADD ONE!");
-            return null;
+            return new Obstacle();
         }
     }
     public static bool IsInteger(float value)
@@ -679,17 +1106,17 @@ public class ObstacleMapRequest
     public float timeStarted;
     public float timeCompleted;
 }
-public class Obstacle
+public struct Obstacle
 {
     public Float2 position;
     public Float2 size;
-    public string name = null;
-    public int instanceID = 0;
+    public FixedString32Bytes name;
+    public int instanceID;
 }
-public class MapTarget
+public struct MapTarget
 {
     public Float2 position;
-    public string name;
+    public FixedString32Bytes name;
     public int instanceID;
 }
 public class CompleteObstacleMapReturn
@@ -699,6 +1126,174 @@ public class CompleteObstacleMapReturn
     public Float2 startArea;
     public Float2 size;
     public Float2Bounds bounds;
+}
+public struct CompleteObstacleMapReturnStruct
+{
+    public NativeArray<Obstacle> obstacleMap;
+    public NativeArray<bool> obstacleMapBool;
+    public Float2 startArea;
+    public Float2 size;
+    public Float2Bounds bounds;
+}
+/// <summary>
+/// A collection of flattened data from a 2d array of complete obstacle maps. To retrieve a value it is recommended to use ObstacleMapUtils.RetrieveObstacleMap
+/// </summary>
+public struct CompleteObstacleStructCollection
+{
+
+    public NativeArray<Float2> sizes;
+    public NativeArray<Float2> startAreas;
+    public NativeArray<Float2Bounds> bounds;
+
+    public NativeArray<bool> obstacleMapBools;
+
+    public NativeArray<Obstacle> obstacleMapData;
+
+
+    /// <summary>
+    /// Index into here to get values from data. structed as: start index, count
+    /// </summary>
+    public NativeArray<int2> obstacleMapOffsets;
+    public NativeArray<int2> obstacleMapBoolOffsets;
+    public int2 size;
+    public int2 Individualsize;
+
+    public void Dispose()
+    {
+        if (obstacleMapData.IsCreated) obstacleMapData.Dispose();
+        if (obstacleMapBools.IsCreated) obstacleMapBools.Dispose();
+        if (sizes.IsCreated) sizes.Dispose();
+        if (startAreas.IsCreated) startAreas.Dispose();
+        if (bounds.IsCreated) bounds.Dispose();
+        if (obstacleMapOffsets.IsCreated) obstacleMapOffsets.Dispose();
+        if (obstacleMapBoolOffsets.IsCreated) obstacleMapBoolOffsets.Dispose();
+    }
+}
+public struct CompleteObstacleMapSlice
+{
+    public Float2 size;
+    public Float2 startArea;
+    public Float2Bounds bounds;
+    public NativeSlice<Obstacle> obstacleMap;
+    public NativeSlice<bool> obstacleMapBool;
+}
+public static class ObstacleMapUtils
+{
+
+
+    public static CompleteObstacleMapSlice RetrieveObstacleMap(CompleteObstacleStructCollection collection, int2 index)
+    {
+        int width = collection.size.x;
+        int flatIdx = index.y * width + index.x;
+
+        int2 dataOff = collection.obstacleMapOffsets[flatIdx];
+        int2 boolOff = collection.obstacleMapBoolOffsets[flatIdx];
+
+        return new CompleteObstacleMapSlice
+        {
+            size = collection.sizes[flatIdx],
+            startArea = collection.startAreas[flatIdx],
+            bounds = collection.bounds[flatIdx],
+
+            obstacleMap = new NativeSlice<Obstacle>(collection.obstacleMapData, dataOff.x, dataOff.y),
+            obstacleMapBool = new NativeSlice<bool>(collection.obstacleMapBools, boolOff.x, boolOff.y)
+        };
+    }
+    public static CompleteObstacleMapReturnStruct ObstacleMapReturnToStruct(CompleteObstacleMapReturn obr)
+    {
+        return new CompleteObstacleMapReturnStruct
+        {
+            size = obr.size,
+            startArea = obr.startArea,
+            bounds = obr.bounds,
+
+        };
+    }
+    /// Returns a nested native array of obstacle structs. IMPORTANT: remember to dispose of the result when you are done to avoid a leak
+    /// </summary>
+    /// <param name="list"></param>
+    /// <returns></returns>
+    public static CompleteObstacleStructCollection MultipleObstaclesToStruct(CompleteObstacleMapReturn[,] rtn)
+    {
+        int rows = rtn.GetLength(0);
+        int cols = rtn.GetLength(1);
+        int totalMaps = rows * cols;
+
+        int totalObstacleElements = 0;
+        int totalBoolElements = 0;
+        for (int x = 0; x < rows; x++)
+        {
+            for (int y = 0; y < cols; y++)
+            {
+                var map = rtn[x, y].obstacleMap;
+                for (int i = 0; i < map.GetLength(0); i++)
+                    for (int j = 0; j < map.GetLength(1); j++)
+                        totalObstacleElements += map[i, j].Count;
+
+                totalBoolElements += rtn[x, y].obstacleMapBool.Length;
+            }
+        }
+
+        var collection = new CompleteObstacleStructCollection
+        {
+            size = new int2(rows, cols),
+            Individualsize = new int2(rtn[0, 0].obstacleMapBool.GetLength(0), rtn[0, 0].obstacleMapBool.GetLength(1)),
+            sizes = new NativeArray<Float2>(totalMaps, Allocator.Persistent),
+            startAreas = new NativeArray<Float2>(totalMaps, Allocator.Persistent),
+            bounds = new NativeArray<Float2Bounds>(totalMaps, Allocator.Persistent),
+            obstacleMapData = new NativeArray<Obstacle>(totalObstacleElements, Allocator.Persistent),
+            obstacleMapBools = new NativeArray<bool>(totalBoolElements, Allocator.Persistent),
+            obstacleMapOffsets = new NativeArray<int2>(totalMaps, Allocator.Persistent),
+            obstacleMapBoolOffsets = new NativeArray<int2>(totalMaps, Allocator.Persistent)
+        };
+
+        int dataPtr = 0;
+        int boolPtr = 0;
+
+        for (int y = 0; y < cols; y++)
+        {
+            for (int x = 0; x < rows; x++)
+            {
+                int flatIdx = y * rows + x;
+                var currentSource = rtn[x, y];
+
+                collection.sizes[flatIdx] = currentSource.size;
+                collection.startAreas[flatIdx] = currentSource.startArea;
+                collection.bounds[flatIdx] = currentSource.bounds;
+
+                var map = currentSource.obstacleMap;
+                int mapWidth = map.GetLength(0);
+                int mapHeight = map.GetLength(1);
+
+                int obstacleStart = dataPtr;
+                for (int i = 0; i < mapWidth; i++)
+                {
+                    for (int j = 0; j < mapHeight; j++)
+                    {
+                        var cell = map[i, j];
+                        for (int c = 0; c < cell.Count; c++)
+                        {
+                            collection.obstacleMapData[dataPtr++] = cell[c];
+                        }
+                    }
+                }
+                collection.obstacleMapOffsets[flatIdx] = new int2(obstacleStart, dataPtr - obstacleStart);
+
+                int boolStart = boolPtr;
+                var boolMap = currentSource.obstacleMapBool;
+                for (int i = 0; i < boolMap.GetLength(0); i++)
+                {
+                    for (int j = 0; j < boolMap.GetLength(1); j++)
+                    {
+                        collection.obstacleMapBools[boolPtr++] = boolMap[i, j];
+                    }
+                }
+                collection.obstacleMapBoolOffsets[flatIdx] = new int2(boolStart, boolPtr - boolStart);
+            }
+        }
+
+        return collection;
+    }
 }
 public class ContainsPointReturn
 {
