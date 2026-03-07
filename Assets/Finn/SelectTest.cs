@@ -11,6 +11,7 @@ public class SelectTest : MonoBehaviour
     public List<PathFinderAI> selectableObjs = new List<PathFinderAI>();
     public List<PathFinderAI> selectedObjs = new List<PathFinderAI>();
     public List<GameObject> selectableGameObjs = new List<GameObject>();
+    public List<PathFinderAI> enemies = new List<PathFinderAI>();
     Rect selectionRect = new Rect();
     private Vector2 selectionStartPos = new Vector2();
     public Texture2D selectionTexture;
@@ -19,6 +20,7 @@ public class SelectTest : MonoBehaviour
     private Vector2 mouseScreenStartPos = new Vector2();
     private Rect screenSelectionRect = new Rect();
     UILineRenderer lineRenderer;
+    AIManager AIManager;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
@@ -27,6 +29,7 @@ public class SelectTest : MonoBehaviour
         mousePosInput = PlayerInput.Main.MousePos;
         mouseLeftClick = PlayerInput.Main.MouseClickLeft;
         mouseRightClick = PlayerInput.Main.MouseClickRight;
+        AIManager = FindFirstObjectByType<AIManager>();
     }
     private void Start()
     {
@@ -118,20 +121,27 @@ public class SelectTest : MonoBehaviour
             selectionRect = new Rect();
             selectionStartPos = new Vector2();
             screenSelectionRect = new Rect();
+            //if (enemies.FindIndex(x => Vector2.Distance(x.obj.transform.position, mouseWorldPos) < 2) != -1)
+            //{
+            //    AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, true);
+            //}
+            //else
+            //{
+            //    AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, false);
+            //}
             for (int i = 0; i < selectedObjs.Count; i++)
             {
-                selectedObjs[i].targetPos = mouseWorldPos;
-                selectedObjs[i].targetSet = true;
+                AIManager.SendAI(selectedObjs[i], mouseWorldPos);
             }
         }
         if (mouseLeftClick.IsPressed())
         {
             Vector2 sizeWorld = mouseWorldPos - selectionStartPos;
             selectionRect = new Rect(selectionStartPos, sizeWorld);
-            Vector2 sizeScreen = mouseScreenPos - mouseScreenStartPos;
+            Vector2 sizeScreen = mouseScreenPos - new Vector2(Camera.main.WorldToScreenPoint(selectionStartPos).x, Camera.main.WorldToScreenPoint(selectionStartPos).y);
             screenSelectionRect = new Rect(
-                mouseScreenStartPos.x,
-                Screen.height - mouseScreenStartPos.y,
+                Camera.main.WorldToScreenPoint(selectionStartPos).x,
+                Screen.height - Camera.main.WorldToScreenPoint(selectionStartPos).y,
                 sizeScreen.x,
                 -sizeScreen.y
             );
@@ -153,13 +163,26 @@ public class SelectTest : MonoBehaviour
         {
             if (selectedObjs[i].targetSet)
             {
-                lineRenderer.DrawLine(new UILineRenderer.LineSegment
+                if (selectedObjs[i].enemyTarget)
                 {
-                    Color = Color.green,
-                    P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].obj.transform.position),
-                    P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].targetPos),
-                    Width = 1f
-                });
+                    lineRenderer.DrawLine(new UILineRenderer.LineSegment
+                    {
+                        Color = Color.red,
+                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].obj.transform.position),
+                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].targetPos),
+                        Width = 1f
+                    });
+                }
+                else
+                {
+                    lineRenderer.DrawLine(new UILineRenderer.LineSegment
+                    {
+                        Color = Color.green,
+                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].obj.transform.position),
+                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].targetPos),
+                        Width = 1f
+                    });
+                }
             }
         }
 

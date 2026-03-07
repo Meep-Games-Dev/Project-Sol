@@ -32,6 +32,6 @@ public class ObstacleManager : MonoBehaviour
                 return obstaclesInScene[i].objObstacle;
             }
         }
-        return null;
+        return new Obstacle();
     }
 }

@@ -13,9 +13,11 @@ public class ParrallaxTest : MonoBehaviour
     public float sizeMultiplier = 1.0f;
     public int starsPerLayer = 15;
     public int layersNum = 5;
+    private Vector3 previousCamPos;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        previousCamPos = cam.transform.position;
         Vector2 camPos = cam.gameObject.transform.position;
         if (cam.cam.orthographic)
         {
@@ -67,14 +69,21 @@ public class ParrallaxTest : MonoBehaviour
     }
     public void Move(Vector2 speed)
     {
-        Vector2 camPos = cam.gameObject.transform.position;
+        Vector3 camPos = cam.transform.position;
+        Vector2 camDelta = (Vector2)camPos - (Vector2)previousCamPos;
+
         List<GameObject> objsToDestroy = new List<GameObject>();
+
         for (int i = 0; i < starLayers.Count; i++)
         {
             float layerSpeed = (layerSpeedMultiplier * (starLayers.Count - i + 1));
+
             for (int j = 0; j < starLayers[i].Count; j++)
             {
-                starLayers[i][j].transform.Translate(-speed * layerSpeed * Time.deltaTime);
+                Vector2 movement = (speed * layerSpeed * Time.deltaTime) + (camDelta * (1.0f / (i + 1)));
+
+                starLayers[i][j].transform.Translate(-movement);
+
                 if (!DetectObstaclesInPosition.ContainsPoint(new Float2(camPos.x, camPos.y), new Float2(camSpace.x, camSpace.y), new Float2(starLayers[i][j].transform.position.x, starLayers[i][j].transform.position.y)).any)
                 {
                     objsToDestroy.Add(starLayers[i][j]);
@@ -90,6 +99,8 @@ public class ParrallaxTest : MonoBehaviour
                     ContainsPointReturn returnVal = DetectObstaclesInPosition.ContainsPoint(new Float2(camPos.x, camPos.y), new Float2(camSpace.x, camSpace.y), new Float2(objsToDestroy[i].transform.position.x, objsToDestroy[i].transform.position.y));
                     starLayers[j].Remove(objsToDestroy[i]);
                     Vector2 spawnPos = new Vector2();
+                    UnityEngine.Random.InitState(Mathf.RoundToInt(camPos.x + camPos.y * camSpace.x + camSpace.y));
+                    rnd = new System.Random(Mathf.RoundToInt(camPos.x + camPos.y * camSpace.x + camSpace.y));
                     int randomNum = rnd.Next(0, 2);
                     bool randomBool = false;
                     if (randomNum == 0)
@@ -186,5 +197,6 @@ public class ParrallaxTest : MonoBehaviour
             Destroy(objsToDestroy[i]);
 
         }
+        previousCamPos = cam.transform.position;
     }
 }

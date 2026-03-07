@@ -47,10 +47,12 @@ public class CameraMovement : MonoBehaviour
             if (scrollDir < 0 && cam.orthographicSize < 1000)
             {
                 cam.orthographicSize -= scrollDir;
+                parrallax.Move(new Vector2(0, 0));
             }
             else if (scrollDir > 0 && cam.orthographicSize > 2)
             {
                 cam.orthographicSize -= scrollDir;
+                parrallax.Move(new Vector2(0, 0));
             }
         }
         if (rb.linearVelocity != Vector2.zero && parrallax != null)

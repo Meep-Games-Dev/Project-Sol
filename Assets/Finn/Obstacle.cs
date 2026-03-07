@@ -9,7 +9,7 @@ public class ObstacleObj : MonoBehaviour
     public void Start()
     {
         objObstacle = DetectObstaclesInPosition.SetupObstacle(gameObject);
-        if (objObstacle == null)
+        if (objObstacle.successful == false)
         {
             Debug.LogWarning($"GameObject {gameObject.name} does not have a collider, so there is no reason for it to be an obstacle. Deleting ObstacleObj script from GameObject {gameObject.name}");
             Destroy(this);

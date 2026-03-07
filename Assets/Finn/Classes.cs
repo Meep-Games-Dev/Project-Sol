@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Unity.Mathematics;
 using UnityEngine;
@@ -40,12 +41,13 @@ public enum PathfindingStatus
 public class PathFinderAI
 {
     public PathfindingStatus pathStatus;
+    public float stoppingDistance;
+    public bool enemyTarget;
     public Rigidbody2D rb;
     public GameObject obj;
     public bool needsPath;
     public float velocity;
     public Vector2 currentSector;
-    public Vector2 targetSector;
     public bool selected;
     public float maxVelocity = 5f;
     public bool targetSet = false;
@@ -69,7 +71,8 @@ public class PathFinderAI
 }
 public class PathFindTSInput
 {
-    //Used for inputting thread-safe variables into the background "pathfind()" function
+    //Used for inputting thread-safe variables into the background "pathfind()" function]
+    public int AINumber;
     public Float2 AIPos;
     public Float2 TargetPos;
     public List<Obstacle> obstaclesInScene;
@@ -315,11 +318,13 @@ public struct Float2Bounds
 }
 public class CustomObject
 {
+    public bool enemy;
     public Float2 position;
     public Float2 size;
     public float instanceID;
     public string name;
 }
+
 public static class DetectObstaclesInPosition
 {
     public static void DrawRectangle(Vector3 position, Vector3 extent, Color color)
@@ -348,7 +353,8 @@ public static class DetectObstaclesInPosition
                 position = new Float2(obj.transform.position.x, obj.transform.position.y),
                 size = new Float2(obj.GetComponent<Collider2D>().bounds.size.x, obj.GetComponent<Collider2D>().bounds.size.y),
                 name = obj.name.ToString(),
-                instanceID = obj.GetInstanceID()
+                instanceID = obj.GetInstanceID(),
+                successful = true,
             };
             //Debug.Log("Set up obstacle with size " + returnObstacle.size.x + ", " + returnObstacle.size.y);
             return returnObstacle;
@@ -356,7 +362,7 @@ public static class DetectObstaclesInPosition
         else
         {
             Debug.LogError("ERR: OBJ " + obj.name + " DOES NOT INCLUDE A COLLIDER, PLEASE ADD ONE!");
-            return null;
+            return new Obstacle { successful = false };
         }
     }
     public static bool IsInteger(float value)
@@ -631,7 +637,7 @@ public static class DetectObstaclesInPosition
 
         if (s1A.x < position2.x && s2A.x > position2.x && s4A.y < position2.y && s2A.y > position2.y)
         {
-            return new ContainsPointReturn();
+            return new ContainsPointReturn { s1 = true, s2 = true, s3 = true, s4 = true, any = true };
         }
         else
         {
@@ -673,20 +679,22 @@ public static class DetectObstaclesInPosition
 
     }
 }
+
 public class ObstacleMapRequest
 {
     public Task<bool[,]> obstacleMapReturn;
     public float timeStarted;
     public float timeCompleted;
 }
-public class Obstacle
+public struct Obstacle
 {
     public Float2 position;
     public Float2 size;
-    public string name = null;
-    public int instanceID = 0;
+    public string name;
+    public int instanceID;
+    public bool successful;
 }
-public class MapTarget
+public struct MapTarget
 {
     public Float2 position;
     public string name;
@@ -703,13 +711,13 @@ public class CompleteObstacleMapReturn
 public class ContainsPointReturn
 {
     //Left
-    public bool s1 = true;
+    public bool s1;
     //Top
-    public bool s2 = true;
+    public bool s2;
     //Right
-    public bool s3 = true;
+    public bool s3;
     //Bottom
-    public bool s4 = true;
+    public bool s4;
 
-    public bool any = true;
+    public bool any;
 }
