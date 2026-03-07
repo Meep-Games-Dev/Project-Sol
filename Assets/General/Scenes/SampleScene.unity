@@ -245,6 +245,8 @@ MonoBehaviour:
   AIPrefab: {fileID: 271389420182585176, guid: 9bd06c8110ea6af4c89e76a62d14ef3d, type: 3}
   targets:
   - {fileID: 763915684}
+  - {fileID: 1782162660}
+  - {fileID: 218950217}
   nodeSize: 1
   loopsBeforeUpdate: 50
   AISpeed: 3
