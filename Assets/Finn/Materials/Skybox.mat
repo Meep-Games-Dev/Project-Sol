@@ -20,7 +20,7 @@ Material:
   stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
-  m_LockedProperties: 
+  m_LockedProperties: _Color
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -38,12 +38,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _CamposMult: 0.01
-    - _Density: 29.5
-    - _Intensity: 39.4
+    - _CamPosMult3: 1
+    - _CamposMult: 0
+    - _CamposMult2: 1.2
+    - _Density: 277.3
+    - _Edge1: 0.001
+    - _Intensity: 653.69
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _edge: 0.02
+    - _Speed: 13.41
+    - _edge: 0.001
     m_Colors:
     - _CameraPos: {r: 0, g: 0, b: 0, a: 0}
     - _Color: {r: 1, g: 0.7425743, b: 0, a: 1}

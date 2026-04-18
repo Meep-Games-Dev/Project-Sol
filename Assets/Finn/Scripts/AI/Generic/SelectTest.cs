@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -11,6 +12,10 @@ public class SelectTest : MonoBehaviour
     public List<PathFinderAI> selectableObjs = new List<PathFinderAI>();
     public List<PathFinderAI> selectedObjs = new List<PathFinderAI>();
     public List<GameObject> selectableGameObjs = new List<GameObject>();
+
+    public List<Planet> selectablePlnts = new List<Planet>();
+    public List<Planet> selectedPlnts = new List<Planet>();
+    public List<GameObject> selectablePlntGmObjs = new List<GameObject>();
     public List<PathFinderAI> enemies = new List<PathFinderAI>();
     Rect selectionRect = new Rect();
     private Vector2 selectionStartPos = new Vector2();
@@ -20,8 +25,7 @@ public class SelectTest : MonoBehaviour
     private Vector2 mouseScreenStartPos = new Vector2();
     private Rect screenSelectionRect = new Rect();
     UILineRenderer lineRenderer;
-    AIManager AIManager;
-
+    Inspector inspector;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
@@ -29,12 +33,12 @@ public class SelectTest : MonoBehaviour
         mousePosInput = PlayerInput.Main.MousePos;
         mouseLeftClick = PlayerInput.Main.MouseClickLeft;
         mouseRightClick = PlayerInput.Main.MouseClickRight;
-        AIManager = FindFirstObjectByType<AIManager>();
     }
     private void Start()
     {
         selectionTexture = new Texture2D(1, 1);
         lineRenderer = FindFirstObjectByType(typeof(UILineRenderer)) as UILineRenderer;
+        inspector = FindFirstObjectByType<Inspector>();
     }
 
     private void OnEnable()
@@ -89,14 +93,32 @@ public class SelectTest : MonoBehaviour
     {
         lineRenderer.ClearLines();
         Vector2 mouseScreenPos = mousePosInput.ReadValue<Vector2>();
-        Vector3 screenPointWithDepth = new Vector3(mouseScreenPos.x, mouseScreenPos.y, 0);
+        Vector3 screenPointWithDepth = new Vector3(mouseScreenPos.x, mouseScreenPos.y, Mathf.Abs(Camera.main.gameObject.transform.position.z));
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(screenPointWithDepth);
-
         if (mouseLeftClick.WasPressedThisFrame())
         {
-            selectionStartPos = mouseWorldPos;
-            mouseScreenStartPos = mouseScreenPos;
-            selectedObjs.Clear();
+
+            RaycastHit hit;
+            if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hit))
+            {
+                Inspectable inspectableObj;
+                if (hit.collider.gameObject.TryGetComponent<Inspectable>(out inspectableObj))
+                {
+                    Debug.Log("Inspecting");
+                    inspector.Inspect(inspectableObj);
+                }
+
+            }
+            else
+            {
+                selectionStartPos = mouseWorldPos;
+                mouseScreenStartPos = mouseScreenPos;
+                selectedObjs.Clear();
+            }
+
+
+
+
         }
         else if (mouseLeftClick.WasReleasedThisFrame())
         {
@@ -109,14 +131,14 @@ public class SelectTest : MonoBehaviour
             selectionRect = new Rect();
             selectionStartPos = new Vector2();
             screenSelectionRect = new Rect();
-            if (enemies.FindIndex(x => Vector2.Distance(x.obj.transform.position, mouseWorldPos) < 2) != -1)
-            {
-                AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, true);
-            }
-            else
-            {
-                AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, false);
-            }
+            //if (enemies.FindIndex(x => Vector2.Distance(x.obj.transform.position, mouseWorldPos) < 2) != -1)
+            //{
+            //    AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, true);
+            //}
+            //else
+            //{
+            //    AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, false);
+            //}
             //for (int i = 0; i < selectedObjs.Count; i++)
             //{
             //    AIManager.SendAI(selectedObjs[i], mouseWorldPos);
@@ -124,28 +146,32 @@ public class SelectTest : MonoBehaviour
         }
         if (mouseLeftClick.IsPressed())
         {
-            Vector2 sizeWorld = mouseWorldPos - selectionStartPos;
-            selectionRect = new Rect(selectionStartPos, sizeWorld);
-            Vector2 sizeScreen = mouseScreenPos - new Vector2(Camera.main.WorldToScreenPoint(selectionStartPos).x, Camera.main.WorldToScreenPoint(selectionStartPos).y);
-            screenSelectionRect = new Rect(
-                Camera.main.WorldToScreenPoint(selectionStartPos).x,
-                Screen.height - Camera.main.WorldToScreenPoint(selectionStartPos).y,
-                sizeScreen.x,
-                -sizeScreen.y
-            );
-            for (int i = 0; i < selectableObjs.Count; i++)
+            if (Vector2.Distance(selectionStartPos, mouseWorldPos) > 15)
             {
-                if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains(selectableObjs[i].obj.transform.position, true))
+                Vector2 sizeWorld = mouseWorldPos - selectionStartPos;
+                selectionRect = new Rect(selectionStartPos, sizeWorld);
+                Vector2 sizeScreen = mouseScreenPos - new Vector2(Camera.main.WorldToScreenPoint(selectionStartPos).x, Camera.main.WorldToScreenPoint(selectionStartPos).y);
+                screenSelectionRect = new Rect(
+                    Camera.main.WorldToScreenPoint(selectionStartPos).x,
+                    Screen.height - Camera.main.WorldToScreenPoint(selectionStartPos).y,
+                    sizeScreen.x,
+                    -sizeScreen.y
+                );
+                for (int i = 0; i < selectableObjs.Count; i++)
                 {
-                    selectedObjs.Add(selectableObjs[i]);
-                    selectableObjs[i].selected = true;
-                }
-                else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains(selectableObjs[i].obj.transform.position, true))
-                {
-                    selectedObjs.Remove(selectableObjs[i]);
-                    selectableObjs[i].selected = false;
+                    if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains(selectableObjs[i].obj.transform.position, true))
+                    {
+                        selectedObjs.Add(selectableObjs[i]);
+                        selectableObjs[i].selected = true;
+                    }
+                    else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains(selectableObjs[i].obj.transform.position, true))
+                    {
+                        selectedObjs.Remove(selectableObjs[i]);
+                        selectableObjs[i].selected = false;
+                    }
                 }
             }
+
         }
         for (int i = 0; i < selectedObjs.Count; i++)
         {

@@ -11,8 +11,6 @@ using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEditor.PlayerSettings;
-using static UnityEngine.InputManagerEntry;
 
 
 public class AIManager : MonoBehaviour
@@ -23,6 +21,7 @@ public class AIManager : MonoBehaviour
     public int EnemyNumber;
     public GameObject AIPrefab;
     public List<GameObject> targets;
+    public List<GameObject> predefinedBoundingBox;
     public float nodeSize = 1;
     public int loopsBeforeUpdate;
     public float AISpeed;
@@ -87,7 +86,7 @@ public class AIManager : MonoBehaviour
         }
 
         obstacleManager = FindFirstObjectByType(typeof(ObstacleManager)).GetComponent<ObstacleManager>();
-        mapBounds = DetectObstaclesInPosition.CompleteObstacleMap(obstacleManager.GetObstaclesInScene(), 1, DetectObstaclesInPosition.SetupMapTargets(targets), obstacleManager.GetObjectsInScene()).bounds;
+        mapBounds = DetectObstaclesInPosition.CompleteObstacleMap(obstacleManager.GetObstaclesInScene(), 1, DetectObstaclesInPosition.SetupMapTargets(predefinedBoundingBox), obstacleManager.GetObjectsInScene()).bounds;
         if (!DetectObstaclesInPosition.IsInteger(mapBounds.size.x / flowFieldSize))
         {
             mapBounds.size.x = Mathf.CeilToInt(mapBounds.size.x / flowFieldSize) * flowFieldSize;
@@ -155,7 +154,7 @@ public class AIManager : MonoBehaviour
         highQualityMapReturn = DetectObstaclesInPosition.CompleteObstacleMap(
             obstacleManager.GetObstaclesInScene(),
             1,
-            DetectObstaclesInPosition.SetupMapTargets(targets),
+            DetectObstaclesInPosition.SetupMapTargets(predefinedBoundingBox),
             DetectObstaclesInPosition.SetupObjects(AIs.Select(a => a.obj).ToList())
         );
 

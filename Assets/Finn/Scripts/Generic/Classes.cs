@@ -1,6 +1,8 @@
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Mathematics;
@@ -14,6 +16,68 @@ public class PathRequest
     public Task<List<Node>> PathfindingTask;
 }
 
+public enum PlanetType
+{
+    IndependentMilitary,
+    IndependentPeaceful,
+    Enemy,
+    LivableUninhabited,
+    NotLivable,
+    Allied
+}
+public enum Resources
+{
+    Ore,
+    Ice,
+    Carbon,
+    RefinedMetal,
+    H2O,
+    Food,
+    EnergyCells,
+    None
+}
+public enum InspectableTypes
+{
+    Planet,
+    Enemy,
+    Ally,
+    Misc
+}
+[System.Serializable]
+public class SaveablePlanet
+{
+    public string description;
+    public PlanetType type;
+    public string name;
+    public List<Resources> resources;
+    public Resources resourceAbundance;
+    public float speed;
+    public Vector2 lastPos;
+}
+[System.Serializable]
+public class SaveableSolarSystem
+{
+    public List<SaveablePlanet> planets;
+}
+[System.Serializable]
+public class Save
+{
+    public SaveableSolarSystem solarSystem;
+    public Vector2 lastCamPos;
+}
+public class StringUtils
+{
+    public static string Nicify(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        return Regex.Replace(text, "(\\B[A-Z])", " $1");
+    }
+}
+public class Resource
+{
+    public Resources type;
+    public int amount;
+}
 public class BoundsObj
 {
     public Rect bounds;
