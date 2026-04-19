@@ -11,9 +11,16 @@ public class TitleScreen : MonoBehaviour
     public float offset;
     public float startTime;
     public float elapsedTime;
+    public GameObject planet;
+    public float planetRotationalSpeed;
+    public Vector3 planetRotationalVector;
+    public GameObject sun;
+    public float sunRotationalSpeed;
+    public Vector3 sunRotationalVector;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        Time.timeScale = 1;
         startTime = Time.time;
 
         for (int i = 0; i < text.Count; i++)
@@ -29,6 +36,9 @@ public class TitleScreen : MonoBehaviour
         elapsedTime = Time.time - startTime;
 
         elapsedTime = Time.time - startTime;
+
+        planet.transform.Rotate(planetRotationalVector * planetRotationalSpeed * Time.deltaTime);
+        sun.transform.Rotate(sunRotationalVector * sunRotationalSpeed * Time.deltaTime);
 
         for (int i = 0; i < text.Count; i++)
         {
@@ -51,5 +61,13 @@ public class TitleScreen : MonoBehaviour
                 }
             }
         }
+    }
+    public void Quit()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }

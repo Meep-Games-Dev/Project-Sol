@@ -18,6 +18,18 @@ public class Planet : MonoBehaviour
     private static readonly string[] designators = { "Alpha", "Beta", "Gamma", "Prime" };
     private readonly System.Random rnd = new();
     public float rotationalSpeed;
+
+    public Color planetColor;
+    public Color atmosphereColor;
+    public Color cloudColor;
+
+    public float min;
+    public float max;
+    public Vector2 surfaceOffset;
+
+    public float cloudCover;
+
+    public float size;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using NUnit.Framework;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -36,7 +37,7 @@ public class SolarSystemManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        Generate(size, 5, new Vector2(0, 0));
+        //Generate(size, 5, new Vector2(0, 0));
     }
 
     // Update is called once per frame
@@ -69,6 +70,7 @@ public class SolarSystemManager : MonoBehaviour
 
     public void Generate(int size, int planets, Vector2 centerPosition)
     {
+        Debug.Log("Generating solar system");
         Random.InitState((int)System.DateTime.Now.Ticks);
         for (int i = 0; i < planets; i++)
         {
@@ -110,34 +112,39 @@ public class SolarSystemManager : MonoBehaviour
 
             instantiatedPlanet.transform.localScale = new Vector3(planetSize, planetSize, planetSize);
             Material planetMat = instantiatedPlanet.GetComponent<MeshRenderer>().material;
+
+            float min = Random.Range(-0.1f, 0.5f);
+            float max = Random.Range(1f, 1.3f);
+            Vector3 surfaceOffset = new Vector3(Random.Range(-5000f, 5000f), Random.Range(-5000f, 5000f), Random.Range(-5000f, 5000f));
+
             planetMat.SetColor("_PlanetSurfaceMain", planetColor);
-            planetMat.SetFloat("_Min", Random.Range(-0.1f, 0.5f));
-            planetMat.SetFloat("_Max", Random.Range(1f, 1.3f));
-            planetMat.SetVector("_SurfaceOffset", new Vector3(Random.Range(-5000f, 5000f), Random.Range(-5000f, 5000f), Random.Range(-5000f, 5000f)));
+            planetMat.SetFloat("_Min", min);
+            planetMat.SetFloat("_Max", max);
+            planetMat.SetVector("_SurfaceOffset", surfaceOffset);
 
             GameObject instantiatedAtmos = instantiatedPlanet.transform.GetChild(0).gameObject;
             //instantiatedAtmos.transform.localScale = new Vector3(planetSize * planet2atmos, planetSize * planet2atmos, planetSize * planet2atmos);
             Material atmosMat = instantiatedAtmos.GetComponent<MeshRenderer>().material;
+            float cloudCover = Random.Range(0f, 0.8f);
             atmosMat.SetColor("_AtmosphereColor", atmosphereColor);
             atmosMat.SetColor("_CloudColor", cloudColor);
-            atmosMat.SetFloat("_CloudCover", Random.Range(0f, 0.8f));
+            atmosMat.SetFloat("_CloudCover", cloudCover);
             instantiatedPlanet.AddComponent<Planet>();
+            Planet planet = instantiatedPlanet.GetComponent<Planet>();
+
+            planet.planetColor = planetColor;
+            planet.atmosphereColor = atmosphereColor;
+            planet.cloudColor = cloudColor;
+            planet.min = min;
+            planet.max = max;
+            planet.surfaceOffset = surfaceOffset;
+            planet.size = planetSize;
+            planet.cloudCover = cloudCover;
 
             planetComponentList.Add(instantiatedPlanet.GetComponent<Planet>());
             planetsList.Add(instantiatedPlanet);
 
         }
-
-        //for (int i = 0; i < 100000; i++)
-        //{
-        //    float distanceFromSun = Random.Range(500, size);
-        //    Vector2 edgePoint = Random.onUnitCircle * size;
-        //    Vector3 position = new Vector3(edgePoint.x + centerPosition.x + Random.Range(-5, 5), edgePoint.y + centerPosition.y + Random.Range(-5, 5), Random.Range(-10, 10));
-        //    GameObject asteroid = Instantiate(asteroidPrefab, position, Quaternion.identity);
-        //    Material planetMat = asteroid.GetComponent<MeshRenderer>().material;
-        //    planetMat.SetVector("_SurfaceOffset", new Vector3(Random.Range(-5000f, 5000f), Random.Range(-5000f, 5000f), Random.Range(-5000f, 5000f)));
-        //    asteroidList.Add(asteroid);
-        //}
 
         //Each batch is a max of 1023 asteroids
         int totalFullBatches = totalAsteroids / 1023;
@@ -157,6 +164,116 @@ public class SolarSystemManager : MonoBehaviour
             {
                 Vector2 edgePoint = Random.onUnitCircle * asteroidBeltDistance;
                 Vector3 position = new Vector3(edgePoint.x + centerPosition.x + Random.Range(-asteroidBeltSize, asteroidBeltSize), edgePoint.y + centerPosition.y + Random.Range(-asteroidBeltSize, asteroidBeltSize), Random.Range(-10, 10));
+                Matrix4x4 asteroidPos = Matrix4x4.Translate(position);
+                Vector3 asteroidSeedOffset = new Vector3(Random.Range(-1000, 1000), Random.Range(-1000, 1000), Random.Range(-1000, 1000));
+                Vector3 asteroidSpinSpeed = new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1));
+                Matrix4x4 asteroidLocalPos = asteroidPos;
+                batchData[j] = asteroidLocalPos;
+                asteroidSpinSpeeds.Add(asteroidSpinSpeed);
+                meshOffsets.Add(asteroidSeedOffset);
+            }
+            propBlocks[i].SetVectorArray("_SurfaceOffset", meshOffsets);
+            propBlocks[i].SetVectorArray("_SpinOffset", asteroidSpinSpeeds);
+
+            asteroidPositions.Add(batchData);
+        }
+    }
+
+    public void Load(SaveableSolarSystem system)
+    {
+        List<SaveablePlanet> importedPlanets = system.planets;
+        Debug.Log(importedPlanets.Count);
+        for (int i = 0; i < importedPlanets.Count; i++)
+        {
+            Debug.Log("Created planet");
+            Color planetColor = importedPlanets[i].planetColor;
+            Color atmosphereColor = importedPlanets[i].atmosphereColor;
+            Color cloudColor = importedPlanets[i].cloudColor;
+
+            float distanceFromSun = Vector2.Distance(importedPlanets[i].lastPos, new Vector2(0, 0));
+            float planetSize = importedPlanets[i].size;
+
+            Vector3 position = new Vector3(importedPlanets[i].lastPos.x, importedPlanets[i].lastPos.y, 0);
+            GameObject planetPivot = Instantiate(new GameObject(), new Vector3(0, 0, 0), Quaternion.identity);
+            planetPivots.Add(planetPivot);
+            GameObject instantiatedPlanet = Instantiate(planetPrefab, planetPivot.transform);
+            instantiatedPlanet.transform.localPosition = position;
+            LineRenderer ln = instantiatedPlanet.AddComponent<LineRenderer>();
+
+            ln.positionCount = Mathf.CeilToInt(distanceFromSun * resolution);
+
+            for (int j = 0; j < ln.positionCount; j++)
+            {
+                float progress = (float)j / (ln.positionCount - 1);
+
+                float radians = progress * 2 * Mathf.PI;
+
+                Vector3 lineRendPos = new Vector3(
+                    distanceFromSun * Mathf.Cos(radians),
+                    distanceFromSun * Mathf.Sin(radians),
+                    0
+                );
+
+                ln.SetPosition(j, lineRendPos);
+            }
+            ln.widthMultiplier = 1.5f;
+            ln.material = orbitMat;
+            ln.alignment = LineAlignment.TransformZ;
+
+            instantiatedPlanet.transform.localScale = new Vector3(planetSize, planetSize, planetSize);
+            Material planetMat = instantiatedPlanet.GetComponent<MeshRenderer>().material;
+
+            float min = importedPlanets[i].min;
+            float max = importedPlanets[i].max;
+            Vector3 surfaceOffset = importedPlanets[i].surfaceOffset;
+
+            planetMat.SetColor("_PlanetSurfaceMain", planetColor);
+            planetMat.SetFloat("_Min", min);
+            planetMat.SetFloat("_Max", max);
+            planetMat.SetVector("_SurfaceOffset", surfaceOffset);
+
+            GameObject instantiatedAtmos = instantiatedPlanet.transform.GetChild(0).gameObject;
+
+            Material atmosMat = instantiatedAtmos.GetComponent<MeshRenderer>().material;
+            float cloudCover = importedPlanets[i].cloudCover;
+            atmosMat.SetColor("_AtmosphereColor", atmosphereColor);
+            atmosMat.SetColor("_CloudColor", cloudColor);
+            atmosMat.SetFloat("_CloudCover", cloudCover);
+            instantiatedPlanet.AddComponent<Planet>();
+            Planet planet = instantiatedPlanet.GetComponent<Planet>();
+
+            planet.planetColor = planetColor;
+            planet.atmosphereColor = atmosphereColor;
+            planet.cloudColor = cloudColor;
+            planet.min = min;
+            planet.max = max;
+            planet.surfaceOffset = surfaceOffset;
+            planet.size = planetSize;
+            planet.cloudCover = cloudCover;
+
+            planetComponentList.Add(instantiatedPlanet.GetComponent<Planet>());
+            planetsList.Add(instantiatedPlanet);
+
+        }
+
+        //Each batch is a max of 1023 asteroids
+        int totalFullBatches = totalAsteroids / 1023;
+
+        int others = totalAsteroids % 1023;
+        propBlocks = new MaterialPropertyBlock[totalFullBatches + 1];
+        for (int i = 0; i <= totalFullBatches; i++)
+        {
+            int amount = (i == totalFullBatches) ? others : 1023;
+            if (amount <= 0) break;
+
+            propBlocks[i] = new MaterialPropertyBlock();
+            Matrix4x4[] batchData = new Matrix4x4[amount];
+            List<Vector4> asteroidSpinSpeeds = new List<Vector4>();
+            List<Vector4> meshOffsets = new List<Vector4>();
+            for (int j = 0; j < amount; j++)
+            {
+                Vector2 edgePoint = Random.onUnitCircle * asteroidBeltDistance;
+                Vector3 position = new Vector3(edgePoint.x + Random.Range(-asteroidBeltSize, asteroidBeltSize), edgePoint.y + Random.Range(-asteroidBeltSize, asteroidBeltSize), Random.Range(-10, 10));
                 Matrix4x4 asteroidPos = Matrix4x4.Translate(position);
                 Vector3 asteroidSeedOffset = new Vector3(Random.Range(-1000, 1000), Random.Range(-1000, 1000), Random.Range(-1000, 1000));
                 Vector3 asteroidSpinSpeed = new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1));

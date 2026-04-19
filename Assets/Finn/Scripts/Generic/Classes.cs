@@ -49,10 +49,23 @@ public class SaveablePlanet
     public string description;
     public PlanetType type;
     public string name;
-    public List<Resources> resources;
+    public List<Resource> resources;
     public Resources resourceAbundance;
     public float speed;
     public Vector2 lastPos;
+
+
+    public Color planetColor;
+    public Color atmosphereColor;
+    public Color cloudColor;
+
+    public float min;
+    public float max;
+    public Vector3 surfaceOffset;
+
+    public float cloudCover;
+
+    public float size;
 }
 [System.Serializable]
 public class SaveableSolarSystem
@@ -63,7 +76,7 @@ public class SaveableSolarSystem
 public class Save
 {
     public SaveableSolarSystem solarSystem;
-    public Vector2 lastCamPos;
+    public Vector3 lastCamPos;
 }
 public class StringUtils
 {
@@ -73,6 +86,7 @@ public class StringUtils
         return Regex.Replace(text, "(\\B[A-Z])", " $1");
     }
 }
+[System.Serializable]
 public class Resource
 {
     public Resources type;

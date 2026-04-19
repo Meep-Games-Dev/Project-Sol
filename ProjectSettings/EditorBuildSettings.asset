@@ -12,5 +12,5 @@ EditorBuildSettings:
     path: Assets/SolarSystemTest.unity
     guid: a201a0c66da54f64291f58a16905f67b
   m_configObjects:
-    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 74eb8909c14f4954f957b50bc619ab19, type: 3}
   m_UseUCBPForAssetBundles: 0
