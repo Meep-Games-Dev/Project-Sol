@@ -106,7 +106,7 @@ public class SolarSystemManager : MonoBehaviour
 
                 ln.SetPosition(j, lineRendPos);
             }
-            ln.widthMultiplier = 1.5f;
+            ln.widthMultiplier = 0.5f;
             ln.material = orbitMat;
             ln.alignment = LineAlignment.TransformZ;
 
@@ -216,7 +216,7 @@ public class SolarSystemManager : MonoBehaviour
 
                 ln.SetPosition(j, lineRendPos);
             }
-            ln.widthMultiplier = 1.5f;
+            ln.widthMultiplier = 0.5f;
             ln.material = orbitMat;
             ln.alignment = LineAlignment.TransformZ;
 

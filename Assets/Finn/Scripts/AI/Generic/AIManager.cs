@@ -69,7 +69,7 @@ public class AIManager : MonoBehaviour
             newAI.obj.name = "AI " + i;
             newAI.instanceID = newAI.obj.gameObject.GetInstanceID();
             selector.selectableGameObjs.Add(newAI.obj);
-            selector.selectableObjs.Add(newAI);
+            //selector.selectableObjs.Add(newAI);
             AIs.Add(newAI);
         }
         for (int i = 0; i < EnemyNumber; i++)

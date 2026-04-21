@@ -246,7 +246,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   type: 3
   title: The Sun
-  description: 'The sun at the middle of the solar system.
+  description: 'The sun at the middle of this solar system.
 
-    It has burned for
-    Eons'
+'

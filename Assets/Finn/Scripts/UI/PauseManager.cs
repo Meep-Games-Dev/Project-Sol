@@ -65,7 +65,7 @@ public class PauseManager : MonoBehaviour
         {
             depthComp.active = true;
         }
-        inspector.ToggleVisability();
+        inspector.HideInspector();
     }
     public void UnPause()
     {
@@ -77,7 +77,7 @@ public class PauseManager : MonoBehaviour
         {
             depthComp.active = false;
         }
-        inspector.ToggleVisability();
+        inspector.ShowInspector();
     }
     public void ReturnToTitle()
     {

@@ -15,7 +15,13 @@ public class PathRequest
     public PathFinderAI AI;
     public Task<List<Node>> PathfindingTask;
 }
-
+public class RVOobstacle
+{
+    public float2 pos;
+    public float rad;
+    public float2 previousPos;
+    public GameObject objRef;
+}
 public enum PlanetType
 {
     IndependentMilitary,
@@ -42,6 +48,17 @@ public enum InspectableTypes
     Enemy,
     Ally,
     Misc
+}
+public class RVOAI
+{
+    public Vector2 pos;
+    public GameObject gameObjectRef;
+    public Vector2 target;
+    public Vector2 vel;
+    public float rad;
+    public RVOAI enemyTarget;
+    public bool targetSet;
+    public float distanceToKeep;
 }
 [System.Serializable]
 public class SaveablePlanet

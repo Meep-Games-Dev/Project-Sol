@@ -9,14 +9,14 @@ public class SelectTest : MonoBehaviour
     private InputAction mousePosInput;
     private InputAction mouseLeftClick;
     private InputAction mouseRightClick;
-    public List<PathFinderAI> selectableObjs = new List<PathFinderAI>();
-    public List<PathFinderAI> selectedObjs = new List<PathFinderAI>();
+    public List<RVOAI> selectableObjs = new List<RVOAI>();
+    public List<RVOAI> selectedObjs = new List<RVOAI>();
     public List<GameObject> selectableGameObjs = new List<GameObject>();
 
     public List<Planet> selectablePlnts = new List<Planet>();
     public List<Planet> selectedPlnts = new List<Planet>();
     public List<GameObject> selectablePlntGmObjs = new List<GameObject>();
-    public List<PathFinderAI> enemies = new List<PathFinderAI>();
+    public List<RVOAI> enemies = new List<RVOAI>();
     Rect selectionRect = new Rect();
     private Vector2 selectionStartPos = new Vector2();
     public Texture2D selectionTexture;
@@ -26,6 +26,7 @@ public class SelectTest : MonoBehaviour
     private Rect screenSelectionRect = new Rect();
     UILineRenderer lineRenderer;
     Inspector inspector;
+    public RVOManager AIManager;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
@@ -39,6 +40,7 @@ public class SelectTest : MonoBehaviour
         selectionTexture = new Texture2D(1, 1);
         lineRenderer = FindFirstObjectByType(typeof(UILineRenderer)) as UILineRenderer;
         inspector = FindFirstObjectByType<Inspector>();
+
     }
 
     private void OnEnable()
@@ -63,7 +65,7 @@ public class SelectTest : MonoBehaviour
         }
         for (int i = 0; i < selectedObjs.Count; i++)
         {
-            Renderer selectedRend = selectedObjs[i].obj.GetComponent<Renderer>();
+            Renderer selectedRend = selectedObjs[i].gameObjectRef.GetComponentInChildren<Renderer>();
             if (selectedRend != null)
             {
                 float left = Camera.main.WorldToScreenPoint(selectedRend.bounds.center - new Vector3(selectedRend.bounds.extents.x, 0, 0)).x;
@@ -82,7 +84,7 @@ public class SelectTest : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"Object {selectedObjs[i].obj.name} does not have a renderer, cannot get bounds of selected object");
+                Debug.LogWarning($"Object {selectedObjs[i].gameObjectRef.name} does not have a renderer, cannot get bounds of selected object");
                 continue;
             }
         }
@@ -91,6 +93,7 @@ public class SelectTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        selectableObjs = AIManager.AIs;
         lineRenderer.ClearLines();
         Vector2 mouseScreenPos = mousePosInput.ReadValue<Vector2>();
         Vector3 screenPointWithDepth = new Vector3(mouseScreenPos.x, mouseScreenPos.y, Mathf.Abs(Camera.main.gameObject.transform.position.z));
@@ -106,6 +109,7 @@ public class SelectTest : MonoBehaviour
                 {
                     Debug.Log("Inspecting");
                     inspector.Inspect(inspectableObj);
+                    inspector.ShowInspector();
                 }
 
             }
@@ -143,10 +147,14 @@ public class SelectTest : MonoBehaviour
             //{
             //    AIManager.SendAI(selectedObjs[i], mouseWorldPos);
             //}
+            for (int i = 0; i < selectedObjs.Count; i++)
+            {
+                AIManager.SendAI(selectedObjs[i], mouseWorldPos);
+            }
         }
         if (mouseLeftClick.IsPressed())
         {
-            if (Vector2.Distance(selectionStartPos, mouseWorldPos) > 15)
+            if (Vector2.Distance(selectionStartPos, mouseWorldPos) > 1)
             {
                 Vector2 sizeWorld = mouseWorldPos - selectionStartPos;
                 selectionRect = new Rect(selectionStartPos, sizeWorld);
@@ -159,15 +167,14 @@ public class SelectTest : MonoBehaviour
                 );
                 for (int i = 0; i < selectableObjs.Count; i++)
                 {
-                    if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains(selectableObjs[i].obj.transform.position, true))
+                    if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Add(selectableObjs[i]);
-                        selectableObjs[i].selected = true;
+                        Debug.Log("Selected an AI");
                     }
-                    else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains(selectableObjs[i].obj.transform.position, true))
+                    else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Remove(selectableObjs[i]);
-                        selectableObjs[i].selected = false;
                     }
                 }
             }
@@ -177,13 +184,13 @@ public class SelectTest : MonoBehaviour
         {
             if (selectedObjs[i].targetSet)
             {
-                if (selectedObjs[i].enemyTarget)
+                if (selectedObjs[i].enemyTarget != null)
                 {
                     lineRenderer.DrawLine(new UILineRenderer.LineSegment
                     {
                         Color = Color.red,
-                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].obj.transform.position),
-                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].targetPos),
+                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position),
+                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].target),
                         Width = 1f
                     });
                 }
@@ -192,8 +199,8 @@ public class SelectTest : MonoBehaviour
                     lineRenderer.DrawLine(new UILineRenderer.LineSegment
                     {
                         Color = Color.green,
-                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].obj.transform.position),
-                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].targetPos),
+                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position),
+                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].target),
                         Width = 1f
                     });
                 }
