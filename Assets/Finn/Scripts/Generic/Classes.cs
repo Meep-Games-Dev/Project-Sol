@@ -59,6 +59,25 @@ public class RVOAI
     public RVOAI enemyTarget;
     public bool targetSet;
     public float distanceToKeep;
+    public int AIType;
+}
+[System.Serializable]
+public class SaveableAIGroup
+{
+    public List<SaveableRVOAI> AIs;
+}
+[System.Serializable]
+public class SaveableRVOAI
+{
+    public Vector2 pos;
+    public Vector2 target;
+    public Vector2 vel;
+    public float rad;
+    public int enemyTargetIdx;
+    public bool targetSet;
+    public float distanceToKeep;
+    public int AIType;
+    public Quaternion rotation;
 }
 [System.Serializable]
 public class SaveablePlanet
@@ -92,6 +111,7 @@ public class SaveableSolarSystem
 [System.Serializable]
 public class Save
 {
+    public SaveableAIGroup AIs;
     public SaveableSolarSystem solarSystem;
     public Vector3 lastCamPos;
 }

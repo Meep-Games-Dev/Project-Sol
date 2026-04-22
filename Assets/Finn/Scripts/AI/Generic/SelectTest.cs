@@ -107,7 +107,6 @@ public class SelectTest : MonoBehaviour
                 Inspectable inspectableObj;
                 if (hit.collider.gameObject.TryGetComponent<Inspectable>(out inspectableObj))
                 {
-                    Debug.Log("Inspecting");
                     inspector.Inspect(inspectableObj);
                     inspector.ShowInspector();
                 }
@@ -149,7 +148,7 @@ public class SelectTest : MonoBehaviour
             //}
             for (int i = 0; i < selectedObjs.Count; i++)
             {
-                AIManager.SendAI(selectedObjs[i], mouseWorldPos);
+                AIManager.SendAI(selectedObjs[i], mouseWorldPos, selectedObjs.Count * 0.6f);
             }
         }
         if (mouseLeftClick.IsPressed())
@@ -170,7 +169,6 @@ public class SelectTest : MonoBehaviour
                     if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Add(selectableObjs[i]);
-                        Debug.Log("Selected an AI");
                     }
                     else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
                     {
@@ -191,7 +189,7 @@ public class SelectTest : MonoBehaviour
                         Color = Color.red,
                         P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position),
                         P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].target),
-                        Width = 1f
+                        Width = 5f
                     });
                 }
                 else
@@ -201,7 +199,7 @@ public class SelectTest : MonoBehaviour
                         Color = Color.green,
                         P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position),
                         P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].target),
-                        Width = 1f
+                        Width = 5f
                     });
                 }
             }

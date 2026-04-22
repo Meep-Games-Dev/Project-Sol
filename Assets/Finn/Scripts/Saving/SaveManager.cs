@@ -9,6 +9,7 @@ public class SaveManager : MonoBehaviour
     public SolarSystemManager systemManager;
     public CameraMovement cameraMovement;
     public SaveManager saveManager;
+    public RVOManager AIManager;
     bool loadSave = false;
     int saveToLoad = 0;
 
@@ -19,6 +20,7 @@ public class SaveManager : MonoBehaviour
         {
             systemManager = FindFirstObjectByType<SolarSystemManager>();
             cameraMovement = FindFirstObjectByType<CameraMovement>();
+            AIManager = FindFirstObjectByType<RVOManager>();
         }
         var managers = Object.FindObjectsByType<SaveManager>(FindObjectsSortMode.None);
 
@@ -60,6 +62,9 @@ public class SaveManager : MonoBehaviour
         string data = File.ReadAllText(Application.persistentDataPath + $"/Save{Save}.json");
         Save readableSave = JsonUtility.FromJson<Save>(data);
         SaveableSolarSystem solarSystem = readableSave.solarSystem;
+        Debug.Log(readableSave.AIs.AIs.Count);
+        AIManager = FindFirstObjectByType<RVOManager>();
+        AIManager.LoadAIs(readableSave.AIs);
         systemManager.Load(solarSystem);
         cameraMovement.transform.position = readableSave.lastCamPos;
     }
@@ -77,6 +82,7 @@ public class SaveManager : MonoBehaviour
     {
         systemManager = FindFirstObjectByType<SolarSystemManager>();
         cameraMovement = FindFirstObjectByType<CameraMovement>();
+        AIManager = FindFirstObjectByType<RVOManager>();
         if (scene.name == "SolarSystemTest" && loadSave)
         {
             Load(saveToLoad);
@@ -86,7 +92,7 @@ public class SaveManager : MonoBehaviour
         else if (scene.name == "SolarSystemTest" && !loadSave)
         {
             systemManager.Generate(3500, 10, Vector2.zero);
-
+            AIManager.SpawnAIs();
         }
     }
 }

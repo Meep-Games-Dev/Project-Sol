@@ -14,6 +14,7 @@ public class PauseManager : MonoBehaviour
     public SolarSystemManager solarSystemManager;
     public CameraMovement cameraMovement;
     public SaveManager saveManager;
+    public RVOManager AIManager;
     public Volume postProcessing;
     public GameObject confirmationDialogueQuit;
     public GameObject confirmationDialogueQuitToTitle;
@@ -28,6 +29,7 @@ public class PauseManager : MonoBehaviour
     private void Start()
     {
         saveManager = FindFirstObjectByType<SaveManager>();
+        AIManager = FindFirstObjectByType<RVOManager>();
     }
 
     public void OnEnable()
@@ -137,6 +139,7 @@ public class PauseManager : MonoBehaviour
             };
             solarSystem.planets.Add(planet);
         }
+        save.AIs = AIManager.Save();
         save.solarSystem = solarSystem;
         save.lastCamPos = cameraMovement.transform.position;
         saveManager.Save(save, 0);

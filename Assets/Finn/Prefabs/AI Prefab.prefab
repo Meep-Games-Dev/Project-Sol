@@ -111,54 +111,13 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8669644912744124819}
-    - targetCorrespondingSourceObject: {fileID: -8391222552659086748, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 865203355279306658}
+      addedObject: {fileID: 1294609871301201699}
     - targetCorrespondingSourceObject: {fileID: 8821623529969584324, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2812326980450099021}
   m_SourcePrefab: {fileID: 100100000, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
---- !u!1 &2444255618631329168 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -8391222552659086748, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
-  m_PrefabInstance: {fileID: 3055654985070532596}
-  m_PrefabAsset: {fileID: 0}
---- !u!58 &865203355279306658
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2444255618631329168}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: -4.1801653}
-  m_Radius: 7.274273
 --- !u!1 &2785115545321269925 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}
@@ -180,6 +139,27 @@ MonoBehaviour:
   title: Light Fighter
   description: A small light fighter, belonging to your side. This craft is somewhat
     maneuverable and has 6 guns
+--- !u!135 &1294609871301201699
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2785115545321269925}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 7.163067
+  m_Center: {x: 0, y: 4.173813, z: 0}
 --- !u!1 &5767824524327739184 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8821623529969584324, guid: c589a2628e5e5d34b9da77ff9a5c9961, type: 3}

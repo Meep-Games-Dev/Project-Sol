@@ -2835,6 +2835,59 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
+--- !u!1 &1079181029 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9131412758843556712, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
+  m_PrefabInstance: {fileID: 4702992476423021781}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1079181035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079181029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e00667bf3fb29dc46b5bd531d62f29e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleTag
+--- !u!114 &1079181036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079181029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b14013cf19ea7124da64a84073bf3ae5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Inspectable
+  type: 3
+  title: The Sun
+  description: ' '
+--- !u!135 &1079181037
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1079181029}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.099999994
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1087591824
 GameObject:
   m_ObjectHideFlags: 0
@@ -3072,6 +3125,7 @@ MonoBehaviour:
   solarSystemManager: {fileID: 44898788}
   cameraMovement: {fileID: 961739755}
   saveManager: {fileID: 0}
+  AIManager: {fileID: 0}
   postProcessing: {fileID: 919462411}
   confirmationDialogueQuit: {fileID: 1761619791}
   confirmationDialogueQuitToTitle: {fileID: 289068066}
@@ -3196,10 +3250,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RVOManager
   activeAIs: 
-  maxSpeed: 2
-  AICount: 5
-  AIPrefab: {fileID: 2785115545321269925, guid: b67e76a8b6daa524da76cafaa8ace12a, type: 3}
-  radius: 0.1
+  planets: []
+  solarSystemManager: {fileID: 0}
+  maxSpeed: 100
+  AICount: 100
+  AIPrefabs:
+  - {fileID: 2785115545321269925, guid: b67e76a8b6daa524da76cafaa8ace12a, type: 3}
+  AIRadiusBuffer: 0
+  obstacleRadiusBuffer: 5
+  pushSpeed: 5
+  AIPickupRadius: 20
 --- !u!1 &1463033759
 GameObject:
   m_ObjectHideFlags: 0
@@ -4332,10 +4392,21 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4719273420838036786, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
+    - {fileID: -901493060062709511, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9131412758843556712, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1079181035}
+    - targetCorrespondingSourceObject: {fileID: 9131412758843556712, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1079181037}
+    - targetCorrespondingSourceObject: {fileID: 9131412758843556712, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1079181036}
   m_SourcePrefab: {fileID: 100100000, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
 --- !u!1001 &4735233847034234099
 PrefabInstance:
