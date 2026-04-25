@@ -135,7 +135,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b14013cf19ea7124da64a84073bf3ae5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
-  type: 3
+  type: 2
   title: Light Fighter
   description: A small light fighter, belonging to your side. This craft is somewhat
     maneuverable and has 6 guns

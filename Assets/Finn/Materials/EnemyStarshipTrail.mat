@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: StarShipTrail
+  m_Name: EnemyStarshipTrail
   m_Shader: {fileID: -6465566751694194690, guid: bbe683eb028713441b4ccfc277ebecec, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -38,11 +38,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Brightness: 15.59
+    - _Brightness: 2
     - _QueueControl: 0
     - _QueueOffset: 0
     m_Colors:
-    - _Color: {r: 0, g: 0.54191947, b: 1, a: 1}
+    - _Color: {r: 1, g: 0, b: 0.13899946, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &7756798288297465307

@@ -1,3 +1,5 @@
+using NUnit.Framework;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -6,13 +8,19 @@ public class Inspector : MonoBehaviour
     public TMP_Text title;
     public TMP_Text description;
     public Camera previewCam;
-    private GameObject tracking;
+    public GameObject tracking;
     private bool hiding = true;
     public float hidingSpeed;
     public GameObject showButton;
+    public Inspectable currentHoverText;
+    public GameObject hoverText;
+    private UIManager UIManager;
+    private SelectTest selector;
+
     void Start()
     {
-
+        selector = FindFirstObjectByType<SelectTest>();
+        UIManager = FindFirstObjectByType<UIManager>();
         GetComponent<RectTransform>().position = new Vector2(-350, GetComponent<RectTransform>().position.y);
     }
 
@@ -54,12 +62,35 @@ public class Inspector : MonoBehaviour
     {
         hiding = false;
     }
-
+    public void InspectWithoutCam(Inspectable inspectable)
+    {
+        title.text = inspectable.title;
+        description.text = inspectable.description;
+    }
     public void Inspect(Inspectable inspectable)
     {
         title.text = inspectable.title;
         description.text = inspectable.description;
         tracking = inspectable.gameObject;
+    }
+    public void ShowHoverText(Inspectable inspectable, Vector2 mousePosScreen)
+    {
+        if (inspectable != currentHoverText)
+        {
+            currentHoverText = inspectable;
+            hoverText.GetComponent<TMP_Text>().text = currentHoverText.title;
+            hoverText.SetActive(true);
+            hoverText.transform.position = mousePosScreen;
+        }
+        else
+        {
+            hoverText.transform.position = mousePosScreen;
+        }
+    }
 
+    public void HideHoverText()
+    {
+        hoverText.SetActive(false);
+        currentHoverText = null;
     }
 }

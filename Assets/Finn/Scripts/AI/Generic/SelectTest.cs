@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using static Unity.Burst.Intrinsics.X86;
 public class SelectTest : MonoBehaviour
 {
     public PlayerInput PlayerInput;
@@ -27,6 +29,11 @@ public class SelectTest : MonoBehaviour
     UILineRenderer lineRenderer;
     Inspector inspector;
     public RVOManager AIManager;
+    AlliedManager alliedManager;
+    Inspectable currentInspectedObj;
+    UIManager uiManager;
+    SelectionMode selectionMode = SelectionMode.None;
+    Squadron selectedSquad;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
@@ -40,7 +47,8 @@ public class SelectTest : MonoBehaviour
         selectionTexture = new Texture2D(1, 1);
         lineRenderer = FindFirstObjectByType(typeof(UILineRenderer)) as UILineRenderer;
         inspector = FindFirstObjectByType<Inspector>();
-
+        alliedManager = FindFirstObjectByType<AlliedManager>();
+        uiManager = FindFirstObjectByType<UIManager>();
     }
 
     private void OnEnable()
@@ -90,70 +98,283 @@ public class SelectTest : MonoBehaviour
         }
         GUI.color = Color.white;
     }
+    public void CreateSquad()
+    {
+        List<int> AIsToAddToSquad = new List<int>();
+        for (int i = 0; i < selectedObjs.Count; i++)
+        {
+            AIsToAddToSquad.Add(AIManager.AIs.IndexOf(selectedObjs[i]));
+        }
+        alliedManager.CreateSquadron(AIsToAddToSquad, "Squadron");
+        SelectedObjectsDirty();
+    }
+    public void DeleteSquadSingle()
+    {
+        int ai = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj);
+        if (ai != -1)
+        {
+            alliedManager.RemoveFromSquadron(ai, AIManager.AIs[ai].squadron);
+        }
+    }
+    public void DeleteSquad()
+    {
+        alliedManager.DestroySquadron(selectedSquad);
+
+        SelectedObjectsDirty();
+    }
+    public void DeleteAndCreateNewSquadron()
+    {
+        SelectedObjectsDirty();
+        DeleteSquad();
+        CreateSquad();
+    }
+    public void RemoveFromSquad()
+    {
+        int idx = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj);
+        if (idx != -1)
+        {
+
+
+            alliedManager.RemoveFromSquadron(idx, AIManager.AIs[idx].squadron);
+        }
+    }
+    public void ChangeSquadronFormation()
+    {
+
+        if ((int)selectedSquad.formation < System.Enum.GetNames(typeof(Formation)).Length)
+        {
+            alliedManager.squadrons.Find(x => x == selectedSquad).formation = alliedManager.squadrons.Find(x => x == selectedSquad).formation + 1;
+        }
+        else
+        {
+            alliedManager.squadrons.Find(x => x == selectedSquad).formation = (Formation)System.Enum.GetValues(typeof(Formation)).GetValue(0);
+        }
+        SelectedObjectsDirty();
+    }
+    public void SelectedObjectsDirty()
+    {
+        selectedSquad = null;
+        if (inspector.tracking == null)
+        {
+            inspector.tracking = Instantiate(new GameObject("Selection Group Follower"));
+
+        }
+        Inspectable inspectable = inspector.tracking.GetComponent<Inspectable>();
+        if (inspectable == null)
+        {
+            inspectable = inspector.tracking.AddComponent<Inspectable>();
+        }
+        inspectable.title = "Selected Group";
+        inspectable.description = "A group of currently selected units";
+        inspectable.type = InspectableTypes.SelectedGroup;
+        if (selectedObjs.Count == 0)
+        {
+            return;
+        }
+        Squadron currentSquadron = AIManager.AIs.Find(x => x == selectedObjs[0]).squadron;
+        bool anySquad = false;
+        for (int i = 1; i < selectedObjs.Count; i++)
+        {
+            if (currentSquadron != null)
+            {
+                anySquad = true;
+                if (AIManager.AIs.Find(x => x == selectedObjs[i]).squadron != currentSquadron)
+                {
+                    currentSquadron = null;
+                }
+            }
+            else
+            {
+
+                currentSquadron = AIManager.AIs.Find(x => x == selectedObjs[i]).squadron;
+                if (currentSquadron != null)
+                {
+                    anySquad = true;
+                }
+            }
+        }
+        List<DynamicButton> buttons = new List<DynamicButton>();
+        if (!anySquad)
+        {
+            buttons.Add(new DynamicButton
+            {
+                text = "Create Squadron",
+                function = CreateSquad
+            });
+        }
+        else if (currentSquadron == null)
+        {
+            buttons.Add(new DynamicButton
+            {
+                text = "Remove & Create new squadron",
+                function = DeleteAndCreateNewSquadron
+            });
+        }
+        if (currentSquadron != null)
+        {
+            inspectable.title = "Selected Squadron";
+            inspectable.description = "Allied squadron " + currentSquadron.name;
+            selectedSquad = currentSquadron;
+            buttons.Add(new DynamicButton
+            {
+                text = "Delete Squadron",
+                function = DeleteSquad
+            });
+            buttons.Add(new DynamicButton
+            {
+                text = "Formation: " + currentSquadron.formation,
+                function = ChangeSquadronFormation
+            });
+        }
+
+        uiManager.UpdateButtonLayout(buttons);
+        inspector.InspectWithoutCam(inspectable);
+    }
     // Update is called once per frame
     void Update()
     {
+        bool mouseOverUI = EventSystem.current.IsPointerOverGameObject();
         selectableObjs = AIManager.AIs;
         lineRenderer.ClearLines();
         Vector2 mouseScreenPos = mousePosInput.ReadValue<Vector2>();
         Vector3 screenPointWithDepth = new Vector3(mouseScreenPos.x, mouseScreenPos.y, Mathf.Abs(Camera.main.gameObject.transform.position.z));
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(screenPointWithDepth);
-        if (mouseLeftClick.WasPressedThisFrame())
+        RaycastHit hitHover;
+        bool hoverTextActive = false;
+        if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hitHover))
+        {
+            Inspectable inspectableObj;
+            Inspectable inspectableObjParent = hitHover.collider.gameObject.GetComponentInParent<Inspectable>();
+            Inspectable inspectableObjChild = hitHover.collider.gameObject.GetComponentInChildren<Inspectable>();
+            if (hitHover.collider.gameObject.TryGetComponent<Inspectable>(out inspectableObj))
+            {
+                inspector.ShowHoverText(inspectableObj, mouseScreenPos);
+                hoverTextActive = true;
+            }
+            else if (inspectableObjParent)
+            {
+                inspector.ShowHoverText(inspectableObjParent, mouseScreenPos);
+                hoverTextActive = true;
+            }
+            else if (inspectableObjChild)
+            {
+                inspector.ShowHoverText(inspectableObjChild, mouseScreenPos);
+                hoverTextActive = true;
+            }
+
+        }
+        if (!hoverTextActive)
+        {
+            inspector.HideHoverText();
+        }
+        if (selectionMode == SelectionMode.Multi && selectedObjs.Count > 0)
+        {
+            Vector2 avg = Vector2.zero;
+            Vector2 sum = Vector2.zero;
+            for (int i = 0; i < selectedObjs.Count; i++)
+            {
+                sum += selectedObjs[i].pos;
+            }
+            avg = sum / selectedObjs.Count;
+
+
+            if (inspector.tracking != null)
+            {
+                inspector.tracking.transform.position = avg;
+            }
+        }
+
+        if (mouseLeftClick.WasPressedThisFrame() && !mouseOverUI)
         {
 
             RaycastHit hit;
+
             if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hit))
             {
+
                 Inspectable inspectableObj;
+                Inspectable inspectableObjParent = hit.collider.gameObject.GetComponentInParent<Inspectable>();
+                Inspectable inspectableObjChild = hit.collider.gameObject.GetComponentInChildren<Inspectable>();
+                if (hit.collider.gameObject.TryGetComponent<Inspectable>(out inspectableObj) || inspectableObjParent || inspectableObjChild)
+                {
+                    if (selectionMode == SelectionMode.Multi)
+                    {
+                        Destroy(inspector.tracking);
+                    }
+                }
                 if (hit.collider.gameObject.TryGetComponent<Inspectable>(out inspectableObj))
                 {
                     inspector.Inspect(inspectableObj);
+                    currentInspectedObj = inspectableObj;
+                    selectionMode = SelectionMode.Single;
+                    inspector.ShowInspector();
+                }
+                else if (inspectableObjParent)
+                {
+                    inspector.Inspect(inspectableObjParent);
+                    currentInspectedObj = inspectableObjParent;
+                    selectionMode = SelectionMode.Single;
+                    inspector.ShowInspector();
+                }
+                else if (inspectableObjChild)
+                {
+                    inspector.Inspect(inspectableObjChild);
+                    currentInspectedObj = inspectableObjChild;
+                    selectionMode = SelectionMode.Single;
                     inspector.ShowInspector();
                 }
 
+                if (currentInspectedObj.type == InspectableTypes.Ally)
+                {
+                    List<DynamicButton> buttons = new List<DynamicButton>();
+                    Debug.Log(AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj));
+                    if (AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj).squadron != null)
+                    {
+                        buttons.Add(new DynamicButton
+                        {
+                            function = RemoveFromSquad,
+                            text = "Remove from " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj).squadron.name
+                        });
+                        uiManager.UpdateButtonLayout(buttons);
+                    }
+                }
             }
             else
             {
                 selectionStartPos = mouseWorldPos;
                 mouseScreenStartPos = mouseScreenPos;
+                selectionMode = SelectionMode.Multi;
+
                 selectedObjs.Clear();
             }
-
-
-
-
         }
-        else if (mouseLeftClick.WasReleasedThisFrame())
+        else if (mouseLeftClick.WasReleasedThisFrame() && selectionMode == SelectionMode.Multi)
         {
             selectionRect = new Rect();
             selectionStartPos = new Vector2();
             screenSelectionRect = new Rect();
         }
-        if (mouseRightClick.IsPressed())
+        if (mouseRightClick.IsPressed() && selectionMode == SelectionMode.Multi && !mouseOverUI)
         {
             selectionRect = new Rect();
             selectionStartPos = new Vector2();
             screenSelectionRect = new Rect();
-            //if (enemies.FindIndex(x => Vector2.Distance(x.obj.transform.position, mouseWorldPos) < 2) != -1)
-            //{
-            //    AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, true);
-            //}
-            //else
-            //{
-            //    AIManager.SendMultipleAI(selectedObjs, mouseWorldPos, false);
-            //}
-            //for (int i = 0; i < selectedObjs.Count; i++)
-            //{
-            //    AIManager.SendAI(selectedObjs[i], mouseWorldPos);
-            //}
-            for (int i = 0; i < selectedObjs.Count; i++)
+            if (selectedSquad != null)
             {
-                AIManager.SendAI(selectedObjs[i], mouseWorldPos, selectedObjs.Count * 0.6f);
+                alliedManager.SendSquadron(selectedSquad, mouseWorldPos);
             }
+            else
+            {
+                for (int i = 0; i < selectedObjs.Count; i++)
+                {
+                    AIManager.SendAI(selectedObjs[i], mouseWorldPos, selectedObjs.Count * 0.6f);
+                }
+            }
+
         }
-        if (mouseLeftClick.IsPressed())
+        if (mouseLeftClick.IsPressed() && !mouseOverUI)
         {
-            if (Vector2.Distance(selectionStartPos, mouseWorldPos) > 1)
+            if (Vector2.Distance(selectionStartPos, mouseWorldPos) > 1 && selectionMode == SelectionMode.Multi)
             {
                 Vector2 sizeWorld = mouseWorldPos - selectionStartPos;
                 selectionRect = new Rect(selectionStartPos, sizeWorld);
@@ -169,10 +390,13 @@ public class SelectTest : MonoBehaviour
                     if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Add(selectableObjs[i]);
+                        SelectedObjectsDirty();
+
                     }
                     else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Remove(selectableObjs[i]);
+                        SelectedObjectsDirty();
                     }
                 }
             }
@@ -182,24 +406,70 @@ public class SelectTest : MonoBehaviour
         {
             if (selectedObjs[i].targetSet)
             {
-                if (selectedObjs[i].enemyTarget != null)
+                if (selectedObjs[i].followTarget != null)
                 {
+                    Vector3 screenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position);
+
+                    RectTransform rectTransform = lineRenderer.GetComponent<RectTransform>();
+                    Vector2 localPos;
+
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        rectTransform,
+                        screenPos,
+                        null,
+                        out localPos
+                    );
+
+                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].target);
+
+                    Vector2 targetLocalPos;
+
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        rectTransform,
+                        targetScreenPos,
+                        null,
+                        out targetLocalPos
+                    );
+
+
                     lineRenderer.DrawLine(new UILineRenderer.LineSegment
                     {
                         Color = Color.red,
-                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position),
-                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].target),
-                        Width = 5f
+                        P1 = localPos,
+                        P2 = targetLocalPos,
+                        Width = 1f
                     });
                 }
                 else
                 {
+                    Vector3 screenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position);
+
+                    RectTransform rectTransform = lineRenderer.GetComponent<RectTransform>();
+                    Vector2 localPos;
+
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        rectTransform,
+                        screenPos,
+                        null,
+                        out localPos
+                    );
+
+                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].target);
+
+                    Vector2 targetLocalPos;
+
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        rectTransform,
+                        targetScreenPos,
+                        null,
+                        out targetLocalPos
+                    );
                     lineRenderer.DrawLine(new UILineRenderer.LineSegment
                     {
                         Color = Color.green,
-                        P1 = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position),
-                        P2 = Camera.main.WorldToScreenPoint(selectedObjs[i].target),
-                        Width = 5f
+                        P1 = localPos,
+                        P2 = targetLocalPos,
+                        Width = 1f
                     });
                 }
             }
@@ -207,3 +477,5 @@ public class SelectTest : MonoBehaviour
 
     }
 }
+
+

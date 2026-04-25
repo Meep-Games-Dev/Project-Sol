@@ -47,7 +47,52 @@ public enum InspectableTypes
     Planet,
     Enemy,
     Ally,
+    SelectedGroup,
     Misc
+}
+public enum SelectionMode
+{
+    Single,
+    Multi,
+    None
+}
+public enum Formation
+{
+    None,
+    V,
+}
+[System.Serializable]
+public class Squadron
+{
+    public string name;
+    public Formation formation;
+    public Vector2 target;
+    public bool targetSet;
+    public List<int> AIidx;
+    public int leadAI;
+}
+public class FormationData
+{
+    public static List<Vector2> VData(int amount)
+    {
+        int AIsOnSide = Mathf.FloorToInt(amount / 2) - 1;
+        int leftOver = amount - 1 - AIsOnSide * 2;
+        List<Vector2> VData = new List<Vector2>();
+        for (int i = 0; i < AIsOnSide; i++)
+        {
+            VData.Add(new Vector2(-i, -i));
+        }
+        for (int i = 0; i < AIsOnSide + leftOver; i++)
+        {
+            VData.Add(new Vector2(i, -i));
+        }
+        return VData;
+    }
+}
+public struct DynamicButton
+{
+    public string text;
+    public Action function;
 }
 public class RVOAI
 {
@@ -56,15 +101,18 @@ public class RVOAI
     public Vector2 target;
     public Vector2 vel;
     public float rad;
-    public RVOAI enemyTarget;
+    public RVOAI followTarget;
+    public bool enemyTarget;
     public bool targetSet;
     public float distanceToKeep;
     public int AIType;
+    public Squadron squadron;
 }
 [System.Serializable]
 public class SaveableAIGroup
 {
     public List<SaveableRVOAI> AIs;
+    public List<Squadron> squadrons;
 }
 [System.Serializable]
 public class SaveableRVOAI
@@ -73,7 +121,8 @@ public class SaveableRVOAI
     public Vector2 target;
     public Vector2 vel;
     public float rad;
-    public int enemyTargetIdx;
+    public int followTargetIdx;
+    public bool enemyTarget;
     public bool targetSet;
     public float distanceToKeep;
     public int AIType;
@@ -111,7 +160,7 @@ public class SaveableSolarSystem
 [System.Serializable]
 public class Save
 {
-    public SaveableAIGroup AIs;
+    public SaveableAIGroup AlliedAIs;
     public SaveableSolarSystem solarSystem;
     public Vector3 lastCamPos;
 }

@@ -27,5 +27,10 @@ public class Inspectable : MonoBehaviour
             title = "Enemy Craft";
             description = "A spacecraft from one of your enemies.";
         }
+        else if (type == InspectableTypes.SelectedGroup)
+        {
+            title = "Group";
+            description = "The currently selected group of units";
+        }
     }
 }

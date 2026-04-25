@@ -169,16 +169,16 @@ public class AIManager : MonoBehaviour
         ////Debug.Log($"Low quality Map Return size is currently: x: {lowQualityMapReturn.obstacleMap.GetLength(0)}, y: {lowQualityMapReturn.obstacleMap.GetLength(1)}");
         ////Debug.Log($"Mapbounds is at position: x: {mapBounds.position.x}, y: {mapBounds.position.y}, size (extents): x: {mapBounds.size.x}, y: {mapBounds.size.y}");
 
-        //for (int i = 0; i < AIs.Count; i++)
+        //for (int i = 0; i < AlliedAIs.Count; i++)
         //{
         //    System.Random rnd = new System.Random();
-        //    AIs[i].targetSet = true;
-        //    AIs[i].targetPos = targets[rnd.Next(0, targets.Count)].transform.position;
-        //    AIs[i].pathStatus = PathfindingStatus.Requested;
+        //    AlliedAIs[i].targetSet = true;
+        //    AlliedAIs[i].targetPos = targets[rnd.Next(0, targets.Count)].transform.position;
+        //    AlliedAIs[i].pathStatus = PathfindingStatus.Requested;
         //}
-        //AIs[0].targetSet = true;
-        //AIs[0].targetPos = targets[1].transform.position;
-        //AIs[0].pathStatus = PathfindingStatus.Requested;
+        //AlliedAIs[0].targetSet = true;
+        //AlliedAIs[0].targetPos = targets[1].transform.position;
+        //AlliedAIs[0].pathStatus = PathfindingStatus.Requested;
 
     }
     public Vector2 findCurrentSector(Vector2 position)
@@ -430,7 +430,7 @@ public class AIManager : MonoBehaviour
         //    loops = 0;
         //    List<Obstacle> returnedObstacles = obstacleManager.GetObstaclesInScene();
         //    List<MapTarget> returnedTargets = DetectObstaclesInPosition.SetupMapTargets(targets);
-        //    List<CustomObject> returnedObjects = DetectObstaclesInPosition.SetupObjects(AIs.Select(a => a.obj).ToList());
+        //    List<CustomObject> returnedObjects = DetectObstaclesInPosition.SetupObjects(AlliedAIs.Select(a => a.obj).ToList());
         //    currentObstacleMapTask = Task.Run(() => DetectObstaclesInPosition.CompleteObstacleMap(returnedObstacles, 1, returnedTargets, returnedObjects));
         //}
 
@@ -755,7 +755,7 @@ public class AIManager : MonoBehaviour
 
             }
             AIPositions[i] = AIs[i].obj.transform.position;
-            ////Debug.Log($"AI {i} pos is {AIs[i].obj.transform.position}");
+            ////Debug.Log($"AI {i} pos is {AlliedAIs[i].obj.transform.position}");
 
             AIs[i] = AI;
         }
@@ -776,7 +776,7 @@ public class AIManager : MonoBehaviour
             {
                 Vector2 safeMove = Vector2.ClampMagnitude(push, AISpeed);
                 AIs[i].obj.transform.Translate(safeMove * 3 * Time.deltaTime);
-                //AIs[i].obj.transform.eulerAngles = new Vector3(0, 0, Mathf.Atan2(safeMove.x, safeMove.y));
+                //AlliedAIs[i].obj.transform.eulerAngles = new Vector3(0, 0, Mathf.Atan2(safeMove.x, safeMove.y));
                 ////Debug.Log($"AI {i} is applying force {safeMove}");
             }
         }

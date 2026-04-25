@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -10,10 +11,13 @@ public class UIManager : MonoBehaviour
     public UILineRenderer lineRenderer;
     public List<GameObject> currentDialogues = new List<GameObject>();
     public List<int> lineTokens = new List<int>();
+    public AlliedManager alliedManager;
+    public GameObject buttonPrefab;
+    public GameObject buttonGroup;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-
+        alliedManager = FindFirstObjectByType<AlliedManager>();
     }
 
     // Update is called once per frame
@@ -21,7 +25,38 @@ public class UIManager : MonoBehaviour
     {
 
     }
-
+    public void UpdateButton(int id, DynamicButton newButton)
+    {
+        GameObject button = buttonGroup.transform.GetChild(id).gameObject;
+        Button buttonComp = button.GetComponent<Button>();
+        buttonComp.onClick.RemoveAllListeners();
+        buttonComp.onClick.AddListener(() => newButton.function());
+        TMP_Text text = button.GetComponent<TMP_Text>();
+        text.text = newButton.text;
+    }
+    public void UpdateButtonLayout(List<DynamicButton> buttons)
+    {
+        ClearButtonLayout();
+        for (int i = 0; i < buttons.Count; i++)
+        {
+            int index = i;
+            GameObject instantiatedButton = Instantiate(buttonPrefab, buttonGroup.transform);
+            Button button = instantiatedButton.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => buttons[index].function());
+            TMP_Text text = instantiatedButton.GetComponentInChildren<TMP_Text>();
+            text.text = buttons[i].text;
+        }
+    }
+    public void ClearButtonLayout()
+    {
+        int children = buttonGroup.transform.childCount;
+        for (int i = children - 1; i > 0; i--)
+        {
+            Debug.Log("Destroyed Gameobject" + buttonGroup.transform.GetChild(i).gameObject.name);
+            Destroy(buttonGroup.transform.GetChild(i).gameObject);
+        }
+    }
     public int DisplayPlanetDialogue(Vector2 screenPos, Planet planet)
     {
         Vector2 dialoguePos = new Vector2(screenPos.x + 10, screenPos.y + 10);

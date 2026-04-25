@@ -1,9 +1,11 @@
+using JetBrains.Annotations;
 using NUnit.Framework;
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class RVOManager : MonoBehaviour
@@ -20,6 +22,7 @@ public class RVOManager : MonoBehaviour
     public float obstacleRadiusBuffer;
     public float pushSpeed;
     public float AIPickupRadius;
+    public AlliedManager alliedManager;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -42,6 +45,7 @@ public class RVOManager : MonoBehaviour
         }
         solarSystemManager = FindFirstObjectByType<SolarSystemManager>();
         planets = solarSystemManager.planetComponentList;
+        alliedManager = FindFirstObjectByType<AlliedManager>();
         Debug.Log(planets.Count);
     }
     public void SpawnAIs()
@@ -61,14 +65,62 @@ public class RVOManager : MonoBehaviour
                 AIType = 0
             };
             AIs.Add(ai);
+            alliedManager.allAllied.Add(AIs.Count - 1);
         }
+    }
+    public void SpawnAlliedAI(Vector2 pos, ShipType type)
+    {
+        GameObject instantiatedObj = Instantiate(AIPrefabs[(int)type], pos, Quaternion.identity);
+        SphereCollider collider = instantiatedObj.GetComponent<SphereCollider>();
+
+        float rad = collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y);
+        RVOAI ai = new RVOAI
+        {
+            pos = instantiatedObj.transform.position,
+            vel = Vector2.zero,
+            gameObjectRef = instantiatedObj,
+            rad = rad + AIRadiusBuffer,
+            AIType = 0
+        };
+        AIs.Add(ai);
+        alliedManager.allAllied.Add(AIs.Count - 1);
+    }
+    public void RemoveAI(int AI)
+    {
+        for (int i = 0; i < alliedManager.allAllied.Count; i++)
+        {
+            if (alliedManager.allAllied[i] > AI)
+            {
+                alliedManager.allAllied[i]--;
+            }
+        }
+        for (int i = 0; i < alliedManager.squadrons.Count; i++)
+        {
+            for (int j = 0; j < alliedManager.squadrons[i].AIidx.Count; j++)
+            {
+                if (alliedManager.squadrons[i].leadAI == AI)
+                {
+                    alliedManager.RemoveFromSquadron(AI, alliedManager.squadrons[i]);
+                }
+                else if (alliedManager.squadrons[i].AIidx[j] == AI)
+                {
+                    alliedManager.RemoveFromSquadron(AI, alliedManager.squadrons[i]);
+                }
+                else if (alliedManager.squadrons[i].AIidx[j] > AI)
+                {
+                    alliedManager.squadrons[i].AIidx[j]--;
+                }
+            }
+        }
+        AIs.RemoveAt(AI);
     }
     public void SendAI(RVOAI ai, Vector2 position, float distance)
     {
         if (!activeAIs.Contains(AIs.IndexOf(ai)))
         {
             ai.target = position + new Vector2(UnityEngine.Random.Range(-distance / 2, distance / 2), UnityEngine.Random.Range(-distance / 2, distance / 2));
-            ai.enemyTarget = null;
+            ai.followTarget = null;
+            ai.enemyTarget = false;
             ai.targetSet = true;
             ai.distanceToKeep = UnityEngine.Random.Range(0f, distance);
             activeAIs.Add(AIs.IndexOf(ai));
@@ -76,7 +128,8 @@ public class RVOManager : MonoBehaviour
         else
         {
             ai.target = position + new Vector2(UnityEngine.Random.Range(-distance / 2, distance / 2), UnityEngine.Random.Range(-distance / 2, distance / 2));
-            ai.enemyTarget = null;
+            ai.followTarget = null;
+            ai.enemyTarget = false;
             ai.targetSet = true;
             ai.distanceToKeep = UnityEngine.Random.Range(0f, distance);
         }
@@ -85,9 +138,10 @@ public class RVOManager : MonoBehaviour
     {
         if (!activeAIs.Contains(AIs.IndexOf(attacker)))
         {
-            attacker.enemyTarget = attacked;
+            attacker.followTarget = attacked;
             attacker.targetSet = true;
             attacker.distanceToKeep = 10;
+            attacker.enemyTarget = true;
             activeAIs.Add(AIs.IndexOf(attacker));
         }
     }
@@ -112,7 +166,8 @@ public class RVOManager : MonoBehaviour
                 rad = data.AIs[i].rad,
                 target = data.AIs[i].target,
                 vel = data.AIs[i].vel,
-                gameObjectRef = instantiatedAI
+                gameObjectRef = instantiatedAI,
+                enemyTarget = data.AIs[i].enemyTarget,
             };
             AIs.Add(ai);
             if (ai.targetSet)
@@ -120,15 +175,17 @@ public class RVOManager : MonoBehaviour
                 activeAIs.Add(i);
             }
         }
+        alliedManager.squadrons = data.squadrons;
+
         for (int i = 0; i < AIs.Count; i++)
         {
-            if (data.AIs[i].enemyTargetIdx != -1)
+            if (data.AIs[i].followTargetIdx != -1)
             {
-                AIs[i].enemyTarget = AIs[data.AIs[i].enemyTargetIdx];
+                AIs[i].followTarget = AIs[data.AIs[i].followTargetIdx];
             }
         }
     }
-    public SaveableAIGroup Save()
+    public SaveableAIGroup SaveAllied()
     {
         SaveableAIGroup save = new SaveableAIGroup();
         List<SaveableRVOAI> saveableRVOAIs = new List<SaveableRVOAI>();
@@ -144,17 +201,21 @@ public class RVOManager : MonoBehaviour
                 vel = AIs[i].vel,
                 AIType = AIs[i].AIType,
                 rotation = AIs[i].gameObjectRef.transform.rotation,
+                enemyTarget = AIs[i].enemyTarget,
+
             };
-            if (AIs[i].enemyTarget != null)
+            if (AIs[i].followTarget != null)
             {
-                saveableAI.enemyTargetIdx = AIs.FindIndex(x => x == AIs[i].enemyTarget);
+                saveableAI.followTargetIdx = AIs.FindIndex(x => x == AIs[i].followTarget);
             }
             else
             {
-                saveableAI.enemyTargetIdx = -1;
+                saveableAI.followTargetIdx = -1;
             }
             saveableRVOAIs.Add(saveableAI);
         }
+        List<Squadron> squadrons = alliedManager.squadrons;
+        save.squadrons = squadrons;
         save.AIs = saveableRVOAIs;
         return save;
     }
@@ -180,6 +241,11 @@ public class RVOManager : MonoBehaviour
             ai.pos = ai.gameObjectRef.transform.position;
             ai.target = AIs[activeAIs[i]].target;
             ai.rad = AIs[activeAIs[i]].rad;
+            ai.followTarget = AIs[activeAIs[i]].followTarget;
+            if (ai.followTarget != null)
+            {
+                ai.target = ai.followTarget.pos;
+            }
             positions[i] = ai.pos;
             velocities[i] = ai.vel;
             goals[i] = ai.target;
@@ -255,7 +321,7 @@ public class RVOManager : MonoBehaviour
         List<int> AIsToRemove = new List<int>();
         for (int i = 0; i < activeAIs.Count; i++)
         {
-            if (finished[i] && AIs[activeAIs[i]].enemyTarget == null)
+            if (finished[i] && AIs[activeAIs[i]].followTarget == null)
             {
                 AIs[activeAIs[i]].targetSet = false;
                 continue;
@@ -280,7 +346,7 @@ public class RVOManager : MonoBehaviour
 
         for (int i = activeAIs.Count - 1; i >= 0; i--)
         {
-            if (finished[i] && AIs[activeAIs[i]].enemyTarget == null)
+            if (finished[i] && AIs[activeAIs[i]].followTarget == null)
             {
                 AIs[activeAIs[i]].targetSet = false;
                 activeAIs.RemoveAt(i);

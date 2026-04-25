@@ -83,7 +83,6 @@ public class PauseManager : MonoBehaviour
     }
     public void ReturnToTitle()
     {
-        SaveAll();
         SceneManager.LoadScene("TitleScreen");
     }
     public void AttemptExit()
@@ -104,7 +103,6 @@ public class PauseManager : MonoBehaviour
     }
     public void Quit()
     {
-        SaveAll();
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -139,7 +137,7 @@ public class PauseManager : MonoBehaviour
             };
             solarSystem.planets.Add(planet);
         }
-        save.AIs = AIManager.Save();
+        save.AlliedAIs = AIManager.SaveAllied();
         save.solarSystem = solarSystem;
         save.lastCamPos = cameraMovement.transform.position;
         saveManager.Save(save, 0);
