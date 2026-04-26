@@ -2,6 +2,7 @@ using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -73,18 +74,18 @@ public class Squadron
 }
 public class FormationData
 {
-    public static List<Vector2> VData(int amount)
+    public static List<Vector2> VData(int amount, Quaternion rotationalVector)
     {
-        int AIsOnSide = Mathf.FloorToInt(amount / 2) - 1;
-        int leftOver = amount - 1 - AIsOnSide * 2;
+        int AIsOnSide = Mathf.FloorToInt(amount / 2);
+        int leftOver = amount - AIsOnSide * 2;
         List<Vector2> VData = new List<Vector2>();
         for (int i = 0; i < AIsOnSide; i++)
         {
-            VData.Add(new Vector2(-i, -i));
+            VData.Add(rotationalVector * new Vector2(-i - 1, -i - 1));
         }
         for (int i = 0; i < AIsOnSide + leftOver; i++)
         {
-            VData.Add(new Vector2(i, -i));
+            VData.Add(rotationalVector * new Vector2(i + 1, -i - 1));
         }
         return VData;
     }

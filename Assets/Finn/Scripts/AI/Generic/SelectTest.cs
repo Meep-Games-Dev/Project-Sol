@@ -154,10 +154,9 @@ public class SelectTest : MonoBehaviour
     public void SelectedObjectsDirty()
     {
         selectedSquad = null;
-        if (inspector.tracking == null)
+        if (inspector.tracking == null || inspector.tracking.GetComponent<Inspectable>().type != InspectableTypes.SelectedGroup)
         {
             inspector.tracking = Instantiate(new GameObject("Selection Group Follower"));
-
         }
         Inspectable inspectable = inspector.tracking.GetComponent<Inspectable>();
         if (inspectable == null)
@@ -169,6 +168,9 @@ public class SelectTest : MonoBehaviour
         inspectable.type = InspectableTypes.SelectedGroup;
         if (selectedObjs.Count == 0)
         {
+            inspector.HideInspector();
+            inspector.showButton.SetActive(false);
+            inspector.tracking = null;
             return;
         }
         Squadron currentSquadron = AIManager.AIs.Find(x => x == selectedObjs[0]).squadron;
@@ -196,6 +198,7 @@ public class SelectTest : MonoBehaviour
         List<DynamicButton> buttons = new List<DynamicButton>();
         if (!anySquad)
         {
+            Debug.Log("Squadron creation available");
             buttons.Add(new DynamicButton
             {
                 text = "Create Squadron",
@@ -243,6 +246,7 @@ public class SelectTest : MonoBehaviour
         bool hoverTextActive = false;
         if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hitHover))
         {
+
             Inspectable inspectableObj;
             Inspectable inspectableObjParent = hitHover.collider.gameObject.GetComponentInParent<Inspectable>();
             Inspectable inspectableObjChild = hitHover.collider.gameObject.GetComponentInChildren<Inspectable>();
@@ -283,7 +287,6 @@ public class SelectTest : MonoBehaviour
                 inspector.tracking.transform.position = avg;
             }
         }
-
         if (mouseLeftClick.WasPressedThisFrame() && !mouseOverUI)
         {
 
@@ -346,6 +349,10 @@ public class SelectTest : MonoBehaviour
                 selectionMode = SelectionMode.Multi;
 
                 selectedObjs.Clear();
+
+                inspector.tracking = null;
+                inspector.HideInspector();
+                inspector.showButton.SetActive(false);
             }
         }
         else if (mouseLeftClick.WasReleasedThisFrame() && selectionMode == SelectionMode.Multi)

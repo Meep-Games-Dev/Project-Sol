@@ -71,7 +71,7 @@ public class AlliedManager : MonoBehaviour
         }
         else if (squadrons[squadronIdx].formation == Formation.V)
         {
-            List<Vector2> AILocalPos = FormationData.VData(squadrons[squadronIdx].AIidx.Count);
+            List<Vector2> AILocalPos = FormationData.VData(squadrons[squadronIdx].AIidx.Count, AIManager.AIs[squadrons[squadronIdx].leadAI].gameObjectRef.transform.rotation);
             AIManager.SendAI(AIManager.AIs[squadrons[squadronIdx].leadAI], position, 0.5f);
         }
     }
@@ -83,7 +83,7 @@ public class AlliedManager : MonoBehaviour
         {
             if (squadrons[i].formation == Formation.V)
             {
-                List<Vector2> AILocalPos = FormationData.VData(squadrons[i].AIidx.Count);
+                List<Vector2> AILocalPos = FormationData.VData(squadrons[i].AIidx.Count, AIManager.AIs[squadrons[i].leadAI].gameObjectRef.transform.rotation);
                 for (int j = 0; j < squadrons[i].AIidx.Count; j++)
                 {
                     AIManager.SendAI(AIManager.AIs[squadrons[i].AIidx[j]], AILocalPos[j] + AIManager.AIs[squadrons[i].leadAI].pos, 0.1f);
