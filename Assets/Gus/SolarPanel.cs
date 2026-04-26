@@ -1,23 +1,23 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System;
 //using Station;
 //using SpaceStationPeices;
+using System;
+using System.Threading;
 
-namespace Structual_piece //The piece is a 90 degree connector - block straight-line and replace with straight-line-90 degree connector
-//Make another piece that is just a strightline connecter.
+namespace SPanel
 {
-    public class Structual : MonoBehaviour
+    public class SolarP : MonoBehaviour
     {
-        public string type = "static"; // no function 
-        public string id = "S_SP";
+        public string type = "static";
+        public string id = "S_PS";
         public Vector3 setPosition = new Vector3(130f, 182f, 0.0f); 
         public GameObject objectToShow; 
         public void show()
         {
             if (objectToShow != null)
             {
-                objectToShow.GetComponent<RectTransform>().position = setPosition; 
+                objectToShow.GetComponent<RectTransform>().position = setPosition;
                 objectToShow.SetActive(true);
             }
         }
@@ -29,13 +29,12 @@ namespace Structual_piece //The piece is a 90 degree connector - block straight-
                 objectToShow.SetActive(false);
             }
         }
-        
         void Awake()
         {
-            transform.position = new Vector3(-6f, -4f, 0f);
+            transform.position = new Vector3(-6f, 4f, 0f);
             hide();
         }
-        void Update() // the rounding for the piece is only activated when the piece is placed, not when it is being dragged
+        void Update()
         {
             if(transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
             {
