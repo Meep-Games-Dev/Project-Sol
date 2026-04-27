@@ -4,12 +4,12 @@ using Station;
 using System;
 using System.Threading;
 
-namespace ResourceMiner//This entire namespace works for all of the pieces, just change the Activation()
+namespace FoodModule
 {
-    public class ResourceMine : MonoBehaviour
+    public class Food : MonoBehaviour
     {
-        public int level = 1;
         public int UpCost = 2500;
+        public int level = 1;
         public Dictionary<int, int> time = new Dictionary<int, int> ()
         {
             {1, 5000},
@@ -20,14 +20,12 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
             {6, 2500},
             {7, 2000}
         };
-        // ect. Decreasing by 500 each time until it reaches 2000 (max level)
-
-
         public string type = "functional";
-        public string ID = "F_RM";
+        public string id = "F_FM";
         int X = 0;
         int Y = 0;
-        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f);  
+        int R = 0;
+        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f);   
         public GameObject objectToShow; 
         public void show()
         {
@@ -39,34 +37,37 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
         }
         public void hide()
         {
+            
             if (objectToShow != null)
             {
-                objectToShow.GetComponent<RectTransform>().position = setPosition;
+                objectToShow.GetComponent<RectTransform>().position = setPosition; 
                 objectToShow.SetActive(false);
             }
         }
 
         void Awake()
         {
-            transform.position = new Vector3(-6f, -2f, 0f);
+            transform.position = new Vector3(-6f, 2f, 0f);
             hide();
         }
+    // Update is called once per frame   
         void Update()
         {
             if(transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
             {
                 transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), 0f);
             }
-        }
+        }   
         void Activation()//on build.cs or RootSpaceStation.cs call Structual_piece.Activation(); to start the function
         {
             //control for the piece
-            Thread.Sleep(time[level]); 
-            SpaceStation.resources[ResourceType.Ore] += 10;
-            SpaceStation.resources[ResourceType.O2] += 10;
-            SpaceStation.resources[ResourceType.Carbon] += 100;
-            SpaceStation.resources[ResourceType.H2O] += 100;
-            SpaceStation.resources[ResourceType.Credits] += 25;
+            // The level influences the number of resources needed to refine into 50 food
+            if ((SpaceStation.resources[ResourceType.Carbon] >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level))) && (SpaceStation.resources[ResourceType.H2O] >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level)))) // refines Carbon and H2O into Food
+            {
+                SpaceStation.resources[ResourceType.Carbon] -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
+                SpaceStation.resources[ResourceType.H2O] -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
+                SpaceStation.resources[ResourceType.Food] += 50;
+            }
         }
         void upgrade() // in space station.cs 
         {
@@ -79,6 +80,6 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
                     UpCost += 2500;
                 }
             }
-        }     
+        }       
     }
 }
