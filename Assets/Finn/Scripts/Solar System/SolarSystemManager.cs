@@ -29,7 +29,7 @@ public class SolarSystemManager : MonoBehaviour
     public Mesh asteroidMesh;
     public Material asteroidMaterial;
     public int totalAsteroids = 100000;
-    public int asteroidBeltSize = 100;
+    public int asteroidBeltSize = 1;
     public int asteroidBeltDistance = 100000;
     public Material orbitMat;
     public int resolution;

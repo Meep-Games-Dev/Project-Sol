@@ -35,8 +35,6 @@ public class TitleScreen : MonoBehaviour
     {
         elapsedTime = Time.time - startTime;
 
-        elapsedTime = Time.time - startTime;
-
         planet.transform.Rotate(planetRotationalVector * planetRotationalSpeed * Time.deltaTime);
         sun.transform.Rotate(sunRotationalVector * sunRotationalSpeed * Time.deltaTime);
 

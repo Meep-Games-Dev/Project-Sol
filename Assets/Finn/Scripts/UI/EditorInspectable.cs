@@ -11,6 +11,8 @@ public class EditorInspectable : Editor
 {
     public override VisualElement CreateInspectorGUI()
     {
+        if (serializedObject == null)
+            return new VisualElement();
         VisualElement root = new VisualElement();
 
         PropertyField modeField = new PropertyField(serializedObject.FindProperty("type"));

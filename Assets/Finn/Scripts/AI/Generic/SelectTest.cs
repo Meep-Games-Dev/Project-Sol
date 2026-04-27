@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -34,6 +35,7 @@ public class SelectTest : MonoBehaviour
     UIManager uiManager;
     SelectionMode selectionMode = SelectionMode.None;
     Squadron selectedSquad;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
@@ -66,6 +68,7 @@ public class SelectTest : MonoBehaviour
 
     private void OnGUI()
     {
+        GUI.depth = 100;
         if (mouseLeftClick.IsPressed() && selectionTexture != null)
         {
             GUI.color = selectionColor;
@@ -98,19 +101,19 @@ public class SelectTest : MonoBehaviour
         }
         GUI.color = Color.white;
     }
-    public void CreateSquad()
+    public void CreateSquad(string name)
     {
         List<int> AIsToAddToSquad = new List<int>();
         for (int i = 0; i < selectedObjs.Count; i++)
         {
             AIsToAddToSquad.Add(AIManager.AIs.IndexOf(selectedObjs[i]));
         }
-        alliedManager.CreateSquadron(AIsToAddToSquad, "Squadron");
+        alliedManager.CreateSquadron(AIsToAddToSquad, name);
         SelectedObjectsDirty();
     }
     public void DeleteSquadSingle()
     {
-        int ai = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj);
+        int ai = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj.gameObject);
         if (ai != -1)
         {
             alliedManager.RemoveFromSquadron(ai, AIManager.AIs[ai].squadron);
@@ -124,13 +127,14 @@ public class SelectTest : MonoBehaviour
     }
     public void DeleteAndCreateNewSquadron()
     {
-        SelectedObjectsDirty();
+
         DeleteSquad();
-        CreateSquad();
+        CreateSquad(RandNames.RandomGreekLetter());
+        SelectedObjectsDirty();
     }
     public void RemoveFromSquad()
     {
-        int idx = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj);
+        int idx = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj.gameObject);
         if (idx != -1)
         {
 
@@ -198,11 +202,10 @@ public class SelectTest : MonoBehaviour
         List<DynamicButton> buttons = new List<DynamicButton>();
         if (!anySquad)
         {
-            Debug.Log("Squadron creation available");
             buttons.Add(new DynamicButton
             {
                 text = "Create Squadron",
-                function = CreateSquad
+                function = uiManager.RequestInput
             });
         }
         else if (currentSquadron == null)
@@ -215,7 +218,7 @@ public class SelectTest : MonoBehaviour
         }
         if (currentSquadron != null)
         {
-            inspectable.title = "Selected Squadron";
+            inspectable.title = "Squadron " + currentSquadron.name;
             inspectable.description = "Allied squadron " + currentSquadron.name;
             selectedSquad = currentSquadron;
             buttons.Add(new DynamicButton
@@ -244,7 +247,7 @@ public class SelectTest : MonoBehaviour
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(screenPointWithDepth);
         RaycastHit hitHover;
         bool hoverTextActive = false;
-        if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hitHover))
+        if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hitHover) && !mouseOverUI)
         {
 
             Inspectable inspectableObj;
@@ -294,7 +297,7 @@ public class SelectTest : MonoBehaviour
 
             if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hit))
             {
-
+                uiManager.HideInspectorDropdown();
                 Inspectable inspectableObj;
                 Inspectable inspectableObjParent = hit.collider.gameObject.GetComponentInParent<Inspectable>();
                 Inspectable inspectableObjChild = hit.collider.gameObject.GetComponentInChildren<Inspectable>();
@@ -329,17 +332,28 @@ public class SelectTest : MonoBehaviour
 
                 if (currentInspectedObj.type == InspectableTypes.Ally)
                 {
+                    //Debug.Log("selected " + currentInspectedObj.name + " in squadron " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name);
                     List<DynamicButton> buttons = new List<DynamicButton>();
-                    Debug.Log(AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj));
-                    if (AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj).squadron != null)
+
+                    if (AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron != null)
                     {
                         buttons.Add(new DynamicButton
                         {
                             function = RemoveFromSquad,
-                            text = "Remove from " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj).squadron.name
+                            text = "Remove from " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name
                         });
                         uiManager.UpdateButtonLayout(buttons);
                     }
+                }
+                else if (currentInspectedObj.type == InspectableTypes.Planet)
+                {
+                    List<string> resources = new List<string>();
+                    resources.Add("Resources");
+                    for (int i = 0; i < currentInspectedObj.gameObject.GetComponent<Planet>().planetResources.Count; i++)
+                    {
+                        resources.Add(StringUtils.Nicify(currentInspectedObj.gameObject.GetComponent<Planet>().planetResources[i].type.ToString()).ToLower() + " : " + currentInspectedObj.gameObject.GetComponent<Planet>().planetResources[i].amount);
+                    }
+                    uiManager.UpdateInspectorDropdown(resources);
                 }
             }
             else
@@ -347,12 +361,13 @@ public class SelectTest : MonoBehaviour
                 selectionStartPos = mouseWorldPos;
                 mouseScreenStartPos = mouseScreenPos;
                 selectionMode = SelectionMode.Multi;
-
+                uiManager.HideInspectorDropdown();
                 selectedObjs.Clear();
-
+                selectedSquad = null;
                 inspector.tracking = null;
                 inspector.HideInspector();
                 inspector.showButton.SetActive(false);
+                uiManager.ClearButtonLayout();
             }
         }
         else if (mouseLeftClick.WasReleasedThisFrame() && selectionMode == SelectionMode.Multi)
@@ -427,7 +442,7 @@ public class SelectTest : MonoBehaviour
                         out localPos
                     );
 
-                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].target);
+                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].followTarget.gameObjectRef.transform.position);
 
                     Vector2 targetLocalPos;
 
@@ -461,7 +476,7 @@ public class SelectTest : MonoBehaviour
                         out localPos
                     );
 
-                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].target);
+                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].visualTarget);
 
                     Vector2 targetLocalPos;
 

@@ -23,6 +23,42 @@ public class RVOobstacle
     public float2 previousPos;
     public GameObject objRef;
 }
+public static class RandNames
+{
+
+    public static string RandomGreekLetter()
+    {
+        System.Random rnd = new System.Random();
+        List<string> greekLetters = new List<string>
+{
+    "ALPHA",
+    "BETA",
+    "GAMMA",
+    "DELTA",
+    "EPSILON",
+    "ZETA",
+    "ETA",
+    "THETA",
+    "IOTA",
+    "KAPPA",
+    "LAMBDA",
+    "MU",
+    "NU",
+    "XI",
+    "OMICRON",
+    "PI",
+    "RHO",
+    "SIGMA",
+    "TAU",
+    "UPSILON",
+    "PHI",
+    "CHI",
+    "PSI",
+    "OMEGA"
+};
+        return greekLetters[rnd.Next(greekLetters.Count)];
+    }
+}
 public enum PlanetType
 {
     IndependentMilitary,
@@ -41,6 +77,8 @@ public enum Resources
     H2O,
     Food,
     EnergyCells,
+    Population,
+    Credits,
     None
 }
 public enum InspectableTypes
@@ -74,19 +112,24 @@ public class Squadron
 }
 public class FormationData
 {
-    public static List<Vector2> VData(int amount, Quaternion rotationalVector)
+    public static List<Vector2> VData(int amount, Quaternion rotationalVector, float spacing = 1.0f)
     {
         int AIsOnSide = Mathf.FloorToInt(amount / 2);
         int leftOver = amount - AIsOnSide * 2;
         List<Vector2> VData = new List<Vector2>();
+
         for (int i = 0; i < AIsOnSide; i++)
         {
-            VData.Add(rotationalVector * new Vector2(-i - 1, -i - 1));
+            float offset = i * spacing;
+            VData.Add(rotationalVector * new Vector2(-offset - 3, -offset - 5));
         }
+
         for (int i = 0; i < AIsOnSide + leftOver; i++)
         {
-            VData.Add(rotationalVector * new Vector2(i + 1, -i - 1));
+            float offset = i * spacing;
+            VData.Add(rotationalVector * new Vector2(offset + 3, -offset - 5));
         }
+
         return VData;
     }
 }
@@ -95,18 +138,26 @@ public struct DynamicButton
     public string text;
     public Action function;
 }
+public struct RVOAIData
+{
+    public float maxSpeed;
+    public float currentSpeed;
+    public int health;
+    public ShipType type;
+}
 public class RVOAI
 {
+    public RVOAIData data;
     public Vector2 pos;
     public GameObject gameObjectRef;
     public Vector2 target;
+    public Vector2 visualTarget;
     public Vector2 vel;
     public float rad;
     public RVOAI followTarget;
     public bool enemyTarget;
     public bool targetSet;
     public float distanceToKeep;
-    public int AIType;
     public Squadron squadron;
 }
 [System.Serializable]
@@ -118,6 +169,8 @@ public class SaveableAIGroup
 [System.Serializable]
 public class SaveableRVOAI
 {
+    public RVOAIData data;
+    public Vector2 visualTarget;
     public Vector2 pos;
     public Vector2 target;
     public Vector2 vel;
@@ -126,7 +179,6 @@ public class SaveableRVOAI
     public bool enemyTarget;
     public bool targetSet;
     public float distanceToKeep;
-    public int AIType;
     public Quaternion rotation;
 }
 [System.Serializable]

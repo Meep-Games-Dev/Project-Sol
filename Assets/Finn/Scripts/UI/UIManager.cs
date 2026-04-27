@@ -14,16 +14,90 @@ public class UIManager : MonoBehaviour
     public AlliedManager alliedManager;
     public GameObject buttonPrefab;
     public GameObject buttonGroup;
+    public TMP_Dropdown squadronDropdown;
+    public TMP_Dropdown resourceDropDown;
+    public SelectTest selector;
+    public RVOManager AIManager;
+    public TMP_Dropdown inspectorDropdown;
+    public GameObject nameField;
+    public TMP_InputField nameFieldInput;
+    System.Random rnd = new System.Random();
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         alliedManager = FindFirstObjectByType<AlliedManager>();
+        selector = FindFirstObjectByType<SelectTest>();
+        AIManager = FindFirstObjectByType<RVOManager>();
     }
 
     // Update is called once per frame
     void Update()
     {
 
+    }
+    public void RequestInput()
+    {
+        nameField.SetActive(true);
+        nameFieldInput.text = RandNames.RandomGreekLetter();
+    }
+    public void FinishInput()
+    {
+        nameField.SetActive(false);
+        selector.CreateSquad(nameFieldInput.text);
+        nameFieldInput.text = "";
+    }
+    public void UpdateResourceDropdown(List<Resource> resources)
+    {
+        resourceDropDown.ClearOptions();
+        List<TMP_Dropdown.OptionData> options = new List<TMP_Dropdown.OptionData>();
+        options.Add(new TMP_Dropdown.OptionData
+        {
+            text = "Resources"
+        });
+        for (int i = 0; i < resources.Count; i++)
+        {
+            options.Add(new TMP_Dropdown.OptionData
+            {
+                text = StringUtils.Nicify(resources[i].type.ToString()).ToLower() + " : " + resources[i].amount,
+            });
+        }
+        resourceDropDown.AddOptions(options);
+    }
+    public void OnResourceDropdownChange()
+    {
+        resourceDropDown.value = 0;
+    }
+    public void UpdateSquadronDropdown(List<Squadron> squadrons)
+    {
+        squadronDropdown.ClearOptions();
+
+        List<TMP_Dropdown.OptionData> options = new List<TMP_Dropdown.OptionData>();
+        options.Add(new TMP_Dropdown.OptionData
+        {
+            text = "Squadrons"
+        });
+        for (int i = 0; i < squadrons.Count; i++)
+        {
+            options.Add(new TMP_Dropdown.OptionData
+            {
+                text = squadrons[i].name + " : " + (squadrons[i].AIidx.Count + 1) + " units",
+            });
+        }
+        squadronDropdown.AddOptions(options);
+    }
+    public void OnSquadronDropdownChange()
+    {
+        int selectedVal = squadronDropdown.value;
+        if (selectedVal == 0) return;
+        Squadron selectedSquadron = alliedManager.squadrons[selectedVal - 1];
+        selector.selectedObjs.Clear();
+        selector.selectedObjs.Add(AIManager.AIs[selectedSquadron.leadAI]);
+        for (int i = 0; i < selectedSquadron.AIidx.Count; i++)
+        {
+            selector.selectedObjs.Add(AIManager.AIs[selectedSquadron.AIidx[i]]);
+        }
+        selector.SelectedObjectsDirty();
+        squadronDropdown.value = 0;
     }
     public void UpdateButton(int id, DynamicButton newButton)
     {
@@ -33,6 +107,25 @@ public class UIManager : MonoBehaviour
         buttonComp.onClick.AddListener(() => newButton.function());
         TMP_Text text = button.GetComponent<TMP_Text>();
         text.text = newButton.text;
+    }
+    public void HideInspectorDropdown()
+    {
+        inspectorDropdown.gameObject.SetActive(false);
+        inspectorDropdown.ClearOptions();
+    }
+    public void UpdateInspectorDropdown(List<string> items)
+    {
+        inspectorDropdown.gameObject.SetActive(true);
+        inspectorDropdown.ClearOptions();
+        List<TMP_Dropdown.OptionData> options = new List<TMP_Dropdown.OptionData>();
+        for (int i = 0; i < items.Count; i++)
+        {
+            options.Add(new TMP_Dropdown.OptionData
+            {
+                text = items[i],
+            });
+        }
+        inspectorDropdown.AddOptions(options);
     }
     public void UpdateButtonLayout(List<DynamicButton> buttons)
     {
@@ -51,9 +144,9 @@ public class UIManager : MonoBehaviour
     public void ClearButtonLayout()
     {
         int children = buttonGroup.transform.childCount;
-        for (int i = children - 1; i > 0; i--)
+        for (int i = children - 1; i >= 0; i--)
         {
-            Debug.Log("Destroyed Gameobject" + buttonGroup.transform.GetChild(i).gameObject.name);
+            //Debug.Log("Destroyed Gameobject" + buttonGroup.transform.GetChild(i).gameObject.name);
             Destroy(buttonGroup.transform.GetChild(i).gameObject);
         }
     }

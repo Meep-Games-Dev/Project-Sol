@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class CameraMovement : MonoBehaviour
@@ -48,6 +49,7 @@ public class CameraMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        bool mouseOverUI = EventSystem.current.IsPointerOverGameObject();
         position = transform.position;
         Vector2 moveDir = movement.ReadValue<Vector2>();
         float scrollDir = scroll.ReadValue<float>();
@@ -55,7 +57,7 @@ public class CameraMovement : MonoBehaviour
         skyboxObj.GetComponent<MeshRenderer>().sharedMaterial.SetVector("_CameraPos", offset);
         //Debug.Log(skyboxObj.GetComponent<MeshRenderer>().sharedMaterial.GetVector("_CameraPos"));
 
-        if (scrollDir != 0)
+        if (scrollDir != 0 && !mouseOverUI)
         {
             if (scrollDir < 0 && cam.transform.position.z > -6000)
             {

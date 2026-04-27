@@ -12,7 +12,7 @@ public class Planet : MonoBehaviour
     public Resources planetResourceAbundance;
     public string readablePlanetType;
     public string readablePlanetResourceAbundance;
-    public List<Resource> planetResources;
+    public List<Resource> planetResources = new List<Resource>();
     private static readonly string[] prefixes = { "Astro", "Zenth", "Kryl", "Xen", "Velt", "Omni", "Quar", "Myn", "Gly", "Alder" };
     private static readonly string[] middles = { "o", "ara", "on", "i", "u", "vadi", "etor", "ili", "oi" };
     private static readonly string[] designators = { "Alpha", "Beta", "Gamma", "Prime" };
@@ -33,7 +33,7 @@ public class Planet : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        rotationalSpeed = UnityEngine.Random.Range(0.5f, 4f);
+        rotationalSpeed = UnityEngine.Random.Range(0.1f, 1f);
         string part1 = prefixes[rnd.Next(prefixes.Length)];
 
         string part2 = middles[rnd.Next(middles.Length)];
@@ -61,8 +61,13 @@ public class Planet : MonoBehaviour
             }
             else
             {
-                resource.amount = rnd.Next(0, 50);
+                if (rnd.Next(0, 100) > 90)
+                {
+                    resource.amount = rnd.Next(0, 50);
+                }
+
             }
+            planetResources.Add(resource);
         }
 
         planetType = (PlanetType)possiblePlanetTypes.GetValue(UnityEngine.Random.Range(0, possiblePlanetTypes.Length));
@@ -72,7 +77,7 @@ public class Planet : MonoBehaviour
         {
             planetType = (PlanetType)possiblePlanetTypes.GetValue(UnityEngine.Random.Range(0, possiblePlanetTypes.Length));
         }
-        readablePlanetResourceAbundance = StringUtils.Nicify(planetResourceAbundance.ToString());
+        readablePlanetResourceAbundance = StringUtils.Nicify(planetResourceAbundance.ToString().ToLower());
         readablePlanetType = StringUtils.Nicify(planetType.ToString());
 
         if (planetType == PlanetType.IndependentPeaceful)
@@ -85,9 +90,9 @@ public class Planet : MonoBehaviour
                 "are looking for a ruler"
             };
             planetDescription =
-                $"The Empire once heavily used this world for {StringUtils.Nicify(planetResourceAbundance.ToString())}, but its use is long past." +
+                $"The Empire once heavily used this world for {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}, but its use is long past." +
                 $" This planet is now ruled independently by the people who were once part of the empire." +
-                $" Now you can find an excess of {StringUtils.Nicify(planetResourceAbundance.ToString())} here." +
+                $" Now you can find an excess of {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()} here." +
                 $" The people of this planet {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]}";
         }
         else if (planetType == PlanetType.IndependentMilitary)
@@ -100,9 +105,9 @@ public class Planet : MonoBehaviour
                 "prey on passing ships"
             };
             planetDescription =
-                $"The Empire once heavily used this world for {StringUtils.Nicify(planetResourceAbundance.ToString())}, but its use is long past." +
+                $"The Empire once heavily used this world for {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}, but its use is long past." +
                 $" This planet is now ruled independently by the people who were once part of the empire." +
-                $" Now you can find an excess of {StringUtils.Nicify(planetResourceAbundance.ToString())} here." +
+                $" Now you can find an excess of {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()} here." +
                 $" The people of this planet {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]}";
         }
         else if (planetType == PlanetType.LivableUninhabited)

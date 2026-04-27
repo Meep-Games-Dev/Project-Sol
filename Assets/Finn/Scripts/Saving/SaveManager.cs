@@ -10,6 +10,7 @@ public class SaveManager : MonoBehaviour
     public CameraMovement cameraMovement;
     public SaveManager saveManager;
     public RVOManager AIManager;
+    public AlliedManager alliedManager;
     bool loadSave = false;
     int saveToLoad = 0;
 
@@ -21,6 +22,7 @@ public class SaveManager : MonoBehaviour
             systemManager = FindFirstObjectByType<SolarSystemManager>();
             cameraMovement = FindFirstObjectByType<CameraMovement>();
             AIManager = FindFirstObjectByType<RVOManager>();
+            alliedManager = FindFirstObjectByType<AlliedManager>();
         }
         var managers = Object.FindObjectsByType<SaveManager>(FindObjectsSortMode.None);
 
@@ -83,6 +85,7 @@ public class SaveManager : MonoBehaviour
         systemManager = FindFirstObjectByType<SolarSystemManager>();
         cameraMovement = FindFirstObjectByType<CameraMovement>();
         AIManager = FindFirstObjectByType<RVOManager>();
+        alliedManager = FindFirstObjectByType<AlliedManager>();
         if (scene.name == "SolarSystemTest" && loadSave)
         {
             Load(saveToLoad);
@@ -91,8 +94,50 @@ public class SaveManager : MonoBehaviour
         }
         else if (scene.name == "SolarSystemTest" && !loadSave)
         {
-            systemManager.Generate(3500, 10, Vector2.zero);
+            System.Random rnd = new System.Random();
+            systemManager.Generate(rnd.Next(2000, 3500), rnd.Next(3, 9), Vector2.zero);
             AIManager.SpawnAIs();
+            alliedManager.resourcesOwned = new List<Resource>();
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.Ice,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.RefinedMetal,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.Carbon,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.Ore,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.EnergyCells,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.H2O,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.Credits,
+                amount = 0
+            });
+            alliedManager.resourcesOwned.Add(new Resource
+            {
+                type = Resources.Population,
+                amount = 0
+            });
         }
     }
 }

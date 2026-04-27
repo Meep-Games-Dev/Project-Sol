@@ -54,7 +54,7 @@ public class RVOManager : MonoBehaviour
         {
             GameObject instantiatedObj = Instantiate(AIPrefabs[0], new Vector3(UnityEngine.Random.Range(-50, 50), UnityEngine.Random.Range(-50, 50), 0), Quaternion.identity);
             SphereCollider collider = instantiatedObj.GetComponent<SphereCollider>();
-
+            instantiatedObj.name = "AI " + i;
             float rad = collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y);
             RVOAI ai = new RVOAI
             {
@@ -62,7 +62,12 @@ public class RVOManager : MonoBehaviour
                 vel = Vector2.zero,
                 gameObjectRef = instantiatedObj,
                 rad = rad + AIRadiusBuffer,
-                AIType = 0
+                data = new RVOAIData
+                {
+                    maxSpeed = 35,
+                    health = 100,
+                    type = ShipType.Fighter
+                }
             };
             AIs.Add(ai);
             alliedManager.allAllied.Add(AIs.Count - 1);
@@ -80,7 +85,6 @@ public class RVOManager : MonoBehaviour
             vel = Vector2.zero,
             gameObjectRef = instantiatedObj,
             rad = rad + AIRadiusBuffer,
-            AIType = 0
         };
         AIs.Add(ai);
         alliedManager.allAllied.Add(AIs.Count - 1);
@@ -116,9 +120,15 @@ public class RVOManager : MonoBehaviour
     }
     public void SendAI(RVOAI ai, Vector2 position, float distance)
     {
+        if (ai.data.currentSpeed == 0)
+        {
+            ai.data.currentSpeed = ai.data.maxSpeed;
+        }
+        //Debug.Log("Sending AI" + ai.gameObjectRef.name + " to position " + position);
         if (!activeAIs.Contains(AIs.IndexOf(ai)))
         {
             ai.target = position + new Vector2(UnityEngine.Random.Range(-distance / 2, distance / 2), UnityEngine.Random.Range(-distance / 2, distance / 2));
+            ai.visualTarget = position;
             ai.followTarget = null;
             ai.enemyTarget = false;
             ai.targetSet = true;
@@ -128,6 +138,7 @@ public class RVOManager : MonoBehaviour
         else
         {
             ai.target = position + new Vector2(UnityEngine.Random.Range(-distance / 2, distance / 2), UnityEngine.Random.Range(-distance / 2, distance / 2));
+            ai.visualTarget = position;
             ai.followTarget = null;
             ai.enemyTarget = false;
             ai.targetSet = true;
@@ -136,6 +147,10 @@ public class RVOManager : MonoBehaviour
     }
     public void AttackAI(RVOAI attacker, RVOAI attacked)
     {
+        if (attacker.data.currentSpeed == 0)
+        {
+            attacker.data.currentSpeed = attacker.data.maxSpeed;
+        }
         if (!activeAIs.Contains(AIs.IndexOf(attacker)))
         {
             attacker.followTarget = attacked;
@@ -157,10 +172,11 @@ public class RVOManager : MonoBehaviour
         for (int i = 0; i < data.AIs.Count; i++)
         {
 
-            GameObject instantiatedAI = Instantiate(AIPrefabs[data.AIs[i].AIType], data.AIs[i].pos, data.AIs[i].rotation);
+            GameObject instantiatedAI = Instantiate(AIPrefabs[(int)data.AIs[i].data.type], data.AIs[i].pos, data.AIs[i].rotation);
             RVOAI ai = new RVOAI
             {
                 targetSet = data.AIs[i].targetSet,
+                visualTarget = data.AIs[i].visualTarget,
                 distanceToKeep = data.AIs[i].distanceToKeep,
                 pos = data.AIs[i].pos,
                 rad = data.AIs[i].rad,
@@ -168,6 +184,7 @@ public class RVOManager : MonoBehaviour
                 vel = data.AIs[i].vel,
                 gameObjectRef = instantiatedAI,
                 enemyTarget = data.AIs[i].enemyTarget,
+
             };
             AIs.Add(ai);
             if (ai.targetSet)
@@ -199,9 +216,10 @@ public class RVOManager : MonoBehaviour
                 rad = AIs[i].rad,
                 target = AIs[i].target,
                 vel = AIs[i].vel,
-                AIType = AIs[i].AIType,
+
                 rotation = AIs[i].gameObjectRef.transform.rotation,
                 enemyTarget = AIs[i].enemyTarget,
+                data = AIs[i].data,
 
             };
             if (AIs[i].followTarget != null)
@@ -235,6 +253,7 @@ public class RVOManager : MonoBehaviour
         NativeArray<float2> pushResults = new NativeArray<float2>(AIs.Count, Allocator.TempJob);
         NativeArray<float2> allPositions = new NativeArray<float2>(AIs.Count, Allocator.TempJob);
         NativeArray<float> allRadius = new NativeArray<float>(AIs.Count, Allocator.TempJob);
+        NativeArray<float> maxSpeeds = new NativeArray<float>(activeAIs.Count, Allocator.TempJob);
         for (int i = 0; i < activeAIs.Count; i++)
         {
             RVOAI ai = AIs[activeAIs[i]];
@@ -246,6 +265,7 @@ public class RVOManager : MonoBehaviour
             {
                 ai.target = ai.followTarget.pos;
             }
+            maxSpeeds[i] = AIs[activeAIs[i]].data.currentSpeed;
             positions[i] = ai.pos;
             velocities[i] = ai.vel;
             goals[i] = ai.target;
@@ -307,7 +327,7 @@ public class RVOManager : MonoBehaviour
             velocities = velocities,
             goals = goals,
             radiuses = radiuses,
-            maxSpeed = maxSpeed,
+            maxSpeed = maxSpeeds,
             DirMap = results,
             obstacles = obstaclePosRad,
             obstacleVelocities = obstacleVelocities,
@@ -367,6 +387,7 @@ public class RVOManager : MonoBehaviour
         allPositions.Dispose();
         pushResults.Dispose();
         allRadius.Dispose();
+        maxSpeeds.Dispose();
     }
     [BurstCompile]
     public struct DetectNearbyJob : IJobParallelFor
@@ -409,7 +430,7 @@ public class RVOManager : MonoBehaviour
         [ReadOnly] public NativeArray<float3> obstacles;
         [ReadOnly] public NativeArray<float2> obstacleVelocities;
         [ReadOnly] public NativeArray<float> distancesToKeep;
-        [ReadOnly] public float maxSpeed;
+        [ReadOnly] public NativeArray<float> maxSpeed;
 
         public NativeArray<float2> DirMap;
         public NativeArray<bool> gotToTarget;
@@ -431,7 +452,7 @@ public class RVOManager : MonoBehaviour
             {
                 gotToTarget[i] = false;
             }
-            float2 prefVel = (toGoal / distToGoal) * maxSpeed;
+            float2 prefVel = (toGoal / distToGoal) * maxSpeed[i];
             float myRad = radiuses[i];
             float timeHorizonObstacle = 4.0f;
             float timeHorizonAI = 1.5f;
@@ -441,8 +462,8 @@ public class RVOManager : MonoBehaviour
 
             NativeArray<float> speeds = new NativeArray<float>(3, Allocator.Temp);
             speeds[0] = 0f;
-            speeds[1] = maxSpeed * 0.5f;
-            speeds[2] = maxSpeed;
+            speeds[1] = maxSpeed[i] * 0.5f;
+            speeds[2] = maxSpeed[i];
 
             foreach (float speed in speeds)
             {
