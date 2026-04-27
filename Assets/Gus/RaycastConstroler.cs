@@ -18,7 +18,6 @@ public class RayController : MonoBehaviour
     public InputAction Rotate;
     public InputAction rightMouse;
     public InputAction kill;
-    public Draw drawer;
     [SerializeField] private GameObject myPrefab;
     [SerializeField] private GameObject prefaab;
     public Dictionary<GameObject, (Vector3, Vector3)> RaysToDraw = new Dictionary<GameObject, (Vector3, Vector3)>();
@@ -45,7 +44,6 @@ public class RayController : MonoBehaviour
     }
         void Awake()
     {
-        drawer = FindFirstObjectByType<Draw>();
         input = new InputSystem_Actions();
         mousePosition = input.Player.MousePos;
         leftMouse = input.Player.MouseDown;
