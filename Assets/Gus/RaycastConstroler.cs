@@ -1,14 +1,15 @@
+
 //using System.Numerics;
 using JetBrains.Annotations;
 using Station;
 using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
-//using UnityEditor.ShaderGraph.Internal;
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/*
+
 public class RayController : MonoBehaviour
 {
     public InputSystem_Actions input;
@@ -37,11 +38,11 @@ public class RayController : MonoBehaviour
     {
         mousePosition.Disable();
         leftMouse.Disable();
-        Rotate.Disable();  
+        Rotate.Disable();
         rightMouse.Disable();
         kill.Disable();
     }
-        void Awake()
+    void Awake()
     {
         input = new InputSystem_Actions();
         mousePosition = input.Player.MousePos;
@@ -55,7 +56,7 @@ public class RayController : MonoBehaviour
 
     private bool isShowingLabel = false;
 
-        private GameObject attachedObject = null; // Track the currently attached object
+    private GameObject attachedObject = null; // Track the currently attached object
 
     void Update()
     {
@@ -86,7 +87,7 @@ public class RayController : MonoBehaviour
             {
                 attachedObject.transform.position = (Vector3)mouseWorldPos;
             }
-            
+            */
 
             attachedObject.transform.position = (Vector2)mouseWorldPos;
 
@@ -96,7 +97,7 @@ public class RayController : MonoBehaviour
                 attachedObject.transform.Rotate(0, 0, 90);
                 Debug.Log("Rotated piece: " + attachedObject.name);
             }
-            if(kill.WasPressedThisFrame())
+            if (kill.WasPressedThisFrame())
             {
                 Destroy(attachedObject);
                 attachedObject = null;
@@ -112,7 +113,7 @@ public class RayController : MonoBehaviour
                 // Second click — drop the object
                 attachedObject.SendMessage("hide", SendMessageOptions.DontRequireReceiver); // hide the piece name when dropped
                 isShowingLabel = false;
-                SpaceStation.ATpiece.Add(attachedObject); 
+                SpaceStation.ATpiece.Add(attachedObject);
                 attachedObject = null;
 
             }
@@ -122,7 +123,7 @@ public class RayController : MonoBehaviour
                 RaycastHit hit;
                 if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hit))
                 {
-                    
+
                     attachedObject = hit.collider.gameObject;
                     Debug.Log("Attached: " + attachedObject.name);
                 }
@@ -156,7 +157,7 @@ public class RayController : MonoBehaviour
         instantiatedPiece3.transform.position = new Vector3(instantiatedPiece3.transform.position.x, instantiatedPiece3.transform.position.y, (-Yval > 0) ? 90 : -90);
         instantiatedPiece3.transform.localScale = new Vector3(Yval, 1, 1);
 
-        
+
 
 
         // draw the connector pieces
@@ -168,6 +169,4 @@ public class RayController : MonoBehaviour
             Destroy(piece);
         }
     }
-
-}
 }
