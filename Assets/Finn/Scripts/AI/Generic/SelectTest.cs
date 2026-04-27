@@ -51,6 +51,7 @@ public class SelectTest : MonoBehaviour
         inspector = FindFirstObjectByType<Inspector>();
         alliedManager = FindFirstObjectByType<AlliedManager>();
         uiManager = FindFirstObjectByType<UIManager>();
+        SelectedObjectsDirty();
     }
 
     private void OnEnable()
@@ -145,7 +146,7 @@ public class SelectTest : MonoBehaviour
     public void ChangeSquadronFormation()
     {
 
-        if ((int)selectedSquad.formation < System.Enum.GetNames(typeof(Formation)).Length)
+        if ((int)selectedSquad.formation < System.Enum.GetNames(typeof(Formation)).Length - 1)
         {
             alliedManager.squadrons.Find(x => x == selectedSquad).formation = alliedManager.squadrons.Find(x => x == selectedSquad).formation + 1;
         }
@@ -239,6 +240,7 @@ public class SelectTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Debug.Log(selectedSquad);
         bool mouseOverUI = EventSystem.current.IsPointerOverGameObject();
         selectableObjs = AIManager.AIs;
         lineRenderer.ClearLines();

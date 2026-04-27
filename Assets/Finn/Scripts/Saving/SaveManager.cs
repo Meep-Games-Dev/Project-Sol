@@ -64,7 +64,6 @@ public class SaveManager : MonoBehaviour
         string data = File.ReadAllText(Application.persistentDataPath + $"/Save{Save}.json");
         Save readableSave = JsonUtility.FromJson<Save>(data);
         SaveableSolarSystem solarSystem = readableSave.solarSystem;
-        Debug.Log(readableSave.AlliedAIs.AIs.Count);
         AIManager = FindFirstObjectByType<RVOManager>();
         AIManager.LoadAIs(readableSave.AlliedAIs);
         systemManager.Load(solarSystem);

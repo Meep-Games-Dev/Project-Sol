@@ -1,15 +1,14 @@
-using System;
 //using System.Numerics;
 using JetBrains.Annotations;
-using UnityEngine;
-using UnityEngine.InputSystem;
+using Station;
+using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
-using Station;
-using DrawConnecter;
-using UnityEditor.ShaderGraph.Internal;
+//using UnityEditor.ShaderGraph.Internal;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-
+/*
 public class RayController : MonoBehaviour
 {
     public InputSystem_Actions input;
@@ -89,7 +88,7 @@ public class RayController : MonoBehaviour
             {
                 attachedObject.transform.position = (Vector3)mouseWorldPos;
             }
-            */
+            
 
             attachedObject.transform.position = (Vector2)mouseWorldPos;
 
@@ -171,4 +170,4 @@ public class RayController : MonoBehaviour
             Destroy(piece);
         }
     }
-}
+}*/

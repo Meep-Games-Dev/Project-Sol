@@ -138,6 +138,7 @@ public struct DynamicButton
     public string text;
     public Action function;
 }
+[System.Serializable]
 public struct RVOAIData
 {
     public float maxSpeed;
@@ -180,6 +181,7 @@ public class SaveableRVOAI
     public bool targetSet;
     public float distanceToKeep;
     public Quaternion rotation;
+    public Squadron squadron;
 }
 [System.Serializable]
 public class SaveablePlanet
@@ -238,8 +240,9 @@ public class BoundsObj
 }
 public enum ShipType
 {
-    Transport,
     Fighter,
+    Transport,
+
     Recon
 }
 public class Node

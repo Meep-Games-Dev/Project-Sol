@@ -171,7 +171,7 @@ public class RVOManager : MonoBehaviour
         AIs = new List<RVOAI>();
         for (int i = 0; i < data.AIs.Count; i++)
         {
-
+            Debug.Log(data.AIs[i].data.type.ToString());
             GameObject instantiatedAI = Instantiate(AIPrefabs[(int)data.AIs[i].data.type], data.AIs[i].pos, data.AIs[i].rotation);
             RVOAI ai = new RVOAI
             {
@@ -184,6 +184,7 @@ public class RVOManager : MonoBehaviour
                 vel = data.AIs[i].vel,
                 gameObjectRef = instantiatedAI,
                 enemyTarget = data.AIs[i].enemyTarget,
+                data = data.AIs[i].data,
 
             };
             AIs.Add(ai);
@@ -193,6 +194,14 @@ public class RVOManager : MonoBehaviour
             }
         }
         alliedManager.squadrons = data.squadrons;
+        for (int i = 0; i < alliedManager.squadrons.Count; i++)
+        {
+            AIs[alliedManager.squadrons[i].leadAI].squadron = alliedManager.squadrons[i];
+            for (int j = 0; j < alliedManager.squadrons[i].AIidx.Count; j++)
+            {
+                AIs[alliedManager.squadrons[i].AIidx[j]].squadron = alliedManager.squadrons[i];
+            }
+        }
 
         for (int i = 0; i < AIs.Count; i++)
         {
@@ -220,6 +229,9 @@ public class RVOManager : MonoBehaviour
                 rotation = AIs[i].gameObjectRef.transform.rotation,
                 enemyTarget = AIs[i].enemyTarget,
                 data = AIs[i].data,
+                squadron = AIs[i].squadron,
+                visualTarget = AIs[i].visualTarget,
+
 
             };
             if (AIs[i].followTarget != null)
