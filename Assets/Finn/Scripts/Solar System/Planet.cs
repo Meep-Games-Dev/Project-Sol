@@ -13,9 +13,8 @@ public class Planet : MonoBehaviour
     public string readablePlanetType;
     public string readablePlanetResourceAbundance;
     public List<Resource> planetResources = new List<Resource>();
-    private static readonly string[] prefixes = { "Astro", "Zenth", "Kryl", "Xen", "Velt", "Omni", "Quar", "Myn", "Gly", "Alder" };
-    private static readonly string[] middles = { "o", "ara", "on", "i", "u", "vadi", "etor", "ili", "oi" };
-    private static readonly string[] designators = { "Alpha", "Beta", "Gamma", "Prime" };
+    private static readonly string[] prefixes = { "Astro", "Zenth", "Kryl", "Xen", "Velt", "Omni", "Quar", "Myn", "Gly", "Alder", "Star" };
+    private static readonly string[] middles = { "o", "ara", "on", "i", "u", "vadi", "etor", "ili", "oi", "in", "of", "ik", "iti" };
     private readonly System.Random rnd = new();
     public float rotationalSpeed;
 
@@ -49,7 +48,7 @@ public class Planet : MonoBehaviour
 
         if (rnd.Next(100) < 30)
         {
-            planetName += " " + designators[rnd.Next(designators.Length)];
+            planetName += " " + RandNames.RandomGreekLetter();
         }
 
         Array possibleResources = Enum.GetValues(typeof(Resources));
@@ -97,10 +96,10 @@ public class Planet : MonoBehaviour
                 "are looking for a ruler"
             };
             planetDescription =
-                $"The Empire once heavily used this world for {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}, but its use is long past." +
-                $" This planet is now ruled independently by the people who were once part of the empire." +
+                $"The Empire once heavily used {planetName} for {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}, but its use is long past." +
+                $" {planetName} is now ruled independently by the people who were once part of the empire." +
                 $" Now you can find an excess of {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()} here." +
-                $" The people of this planet {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]}";
+                $" The people of {planetName} {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]}";
         }
         else if (planetType == PlanetType.IndependentMilitary)
         {
@@ -112,7 +111,7 @@ public class Planet : MonoBehaviour
                 "prey on passing ships"
             };
             planetDescription =
-                $"The Empire once heavily used this world for {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}, but its use is long past." +
+                $"The Empire once heavily used {planetName} for {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}, but its use is long past." +
                 $" This planet is now ruled independently by the people who were once part of the empire." +
                 $" Now you can find an excess of {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()} here." +
                 $" The people of this planet {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]}";
@@ -121,8 +120,8 @@ public class Planet : MonoBehaviour
         {
             string[] description =
             {
-                "The Empire once used this world, but long ago abandoned it for one reason or another. Now it sits, drifting in space, waiting for someone to claim it.",
-                "Nobody has ever set foot on this world. It has been unknown to the rest of the universe for a long time. Now you can claim it and call it home."
+                $"The Empire once used {planetName}, but long ago abandoned it for one reason or another. Now it sits, drifting in space, waiting for someone to claim it.",
+                $"Nobody has ever set foot on {planetName}. It has been unknown to the rest of the universe for a long time. Now you can claim it and call it home."
             };
             planetDescription = description[rnd.Next(0, description.Length)];
         }
@@ -159,13 +158,21 @@ public class Planet : MonoBehaviour
                 "a meltdown"
             };
 
-            planetDescription = $"This planet {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]} {descriptionPart1[rnd.Next(0, descriptionPart1.Length)]}, but now it is completely unlivable." +
-                $"{descriptionPart2[rnd.Next(0, descriptionPart2.Length)]}, a result from {descriptionPart3[rnd.Next(0, descriptionPart3.Length)]} forcing the Empire to abandon this planet." +
+            planetDescription = $"{planetName} {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]} {descriptionPart1[rnd.Next(0, descriptionPart1.Length)]}, but now it is completely unlivable. " +
+                $"{descriptionPart2[rnd.Next(0, descriptionPart2.Length)]}, a result from {descriptionPart3[rnd.Next(0, descriptionPart3.Length)]} forcing the Empire to abandon {planetName}. " +
                 $"Now it is completely uninhabitable with no chance to be restored anytime soon.";
         }
         if (homePlanetOf != Faction.None)
         {
-            planetDescription = "This planet is the home planet of the " + StringUtils.Nicify(homePlanetOf.ToString()) + "\n" + planetDescription;
+            planetDescription = $"{planetName} is the home planet of the {StringUtils.Nicify(homePlanetOf.ToString())} .\n It's most abundant resource is {StringUtils.Nicify(planetResourceAbundance.ToString()).ToLower()}";
+            if (homePlanetOf == Faction.Freindly)
+            {
+                planetType = PlanetType.Allied;
+            }
+            else if (homePlanetOf == Faction.Enemy)
+            {
+                planetType = PlanetType.Enemy;
+            }
         }
 
     }

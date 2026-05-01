@@ -71,6 +71,7 @@ public class RVOManager : MonoBehaviour
         {
             SpawnAI(new Vector2(enemyManager.homePlanet.gameObject.transform.position.x + UnityEngine.Random.Range(0, 50), enemyManager.homePlanet.gameObject.transform.position.y + UnityEngine.Random.Range(0, 50)), enemyAIPrefabs[0]);
         }
+        LoadingState.AIFinishedLoading = true;
     }
     public async void SpawnAI(Vector2 pos, GameObject prefab)
     {
@@ -269,7 +270,7 @@ public class RVOManager : MonoBehaviour
         }
         if (flyby)
         {
-            attacker.target = attacked.pos - Vector2.Normalize(attacker.pos - attacked.pos) * UnityEngine.Random.Range(25, 70);
+            attacker.target = attacked.pos - Vector2.Normalize(attacker.pos - attacked.pos) * 50;
             attacker.flybyTarget = true;
         }
         attacker.targetSet = true;
@@ -403,6 +404,19 @@ public class RVOManager : MonoBehaviour
         {
             RVOAI ai = AIs[activeAIs[i]];
             ai.pos = ai.gameObjectRef.transform.position;
+            if (ai.followTarget != null)
+            {
+                if (ai.flybyTarget)
+                {
+                    Vector2 directionToEnemy = (ai.followTarget.pos - ai.pos).normalized;
+                    float flybyDistance = 50f;
+                    ai.target = ai.followTarget.pos + (directionToEnemy * flybyDistance);
+                }
+                else
+                {
+                    ai.target = ai.followTarget.pos;
+                }
+            }
             if (ai.followTarget != null && !ai.flybyTarget)
             {
                 ai.target = ai.followTarget.pos;

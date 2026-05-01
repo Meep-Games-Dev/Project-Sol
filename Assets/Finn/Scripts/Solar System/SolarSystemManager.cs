@@ -65,11 +65,16 @@ public class SolarSystemManager : MonoBehaviour
         //    float y = Mathf.Sin(planet.currentAngle) * planet.orbitRadius;
         //    planetsList[i].transform.position = new Vector3(x, y, 0);
         //}
-        for (int i = 0; i < planetsList.Count; i++)
+        if (LoadingState.AIFinishedLoading && LoadingState.planetsFinishedLoading)
         {
-            Planet planet = planetComponentList[i];
-            planetPivots[i].transform.Rotate(Vector3.forward, planet.rotationalSpeed * Time.deltaTime);
+            for (int i = 0; i < planetsList.Count; i++)
+            {
+                Planet planet = planetComponentList[i];
+                planetPivots[i].transform.Rotate(Vector3.forward, planet.rotationalSpeed * Time.deltaTime);
+            }
+
         }
+
     }
 
     public void Generate(int size, int planets, Vector2 centerPosition)
@@ -206,6 +211,7 @@ public class SolarSystemManager : MonoBehaviour
 
             asteroidPositions.Add(batchData);
         }
+        LoadingState.planetsFinishedLoading = true;
     }
 
     public void Load(SaveableSolarSystem system)
@@ -316,6 +322,7 @@ public class SolarSystemManager : MonoBehaviour
 
             asteroidPositions.Add(batchData);
         }
+        LoadingState.planetsFinishedLoading = true;
     }
 
 

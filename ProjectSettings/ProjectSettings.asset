@@ -147,7 +147,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 0.03 PRE-ALPHA
+  bundleVersion: 0.04 PRE-ALPHA
   preloadedAssets:
   - {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   - {fileID: -944628639613478452, guid: 74eb8909c14f4954f957b50bc619ab19, type: 3}

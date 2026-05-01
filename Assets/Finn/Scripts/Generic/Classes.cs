@@ -82,6 +82,12 @@ public enum Resources
     Population,
     Credits,
 }
+public static class LoadingState
+{
+    public static bool AIFinishedLoading = false;
+    public static bool planetsFinishedLoading = false;
+    public static bool planetsMoving = false;
+}
 public enum InspectableTypes
 {
     Planet,
