@@ -21,9 +21,6 @@ public class RayController : MonoBehaviour
     [SerializeField] private GameObject myPrefab;
     [SerializeField] private GameObject prefaab;
     public Dictionary<GameObject, (Vector3, Vector3)> RaysToDraw = new Dictionary<GameObject, (Vector3, Vector3)>();
-    float OX = 0f;
-    float OY = 0f;
-    int clones = 0;
     public List<GameObject> ATpiece = new List<GameObject>();
 
     public void OnEnable()
@@ -52,10 +49,6 @@ public class RayController : MonoBehaviour
         kill = input.Player.Kill;
 
     }
-
-
-    private bool isShowingLabel = false;
-
     private GameObject attachedObject = null; // Track the currently attached object
 
     void Update()
@@ -74,7 +67,6 @@ public class RayController : MonoBehaviour
             //Vector2 direction = finish - start;
             RaysToDraw[attachedObject] = (start, finish);
             attachedObject.SendMessage("show", SendMessageOptions.DontRequireReceiver); // make it so the sprite displays the piece name 
-            isShowingLabel = true;
             // Move attached object with mouse
             //attachedObject.transform.position = (Vector2)mouseWorldPos;
             /*
@@ -101,7 +93,6 @@ public class RayController : MonoBehaviour
             {
                 Destroy(attachedObject);
                 attachedObject = null;
-                isShowingLabel = false;
             }
         }
 
@@ -112,7 +103,6 @@ public class RayController : MonoBehaviour
             {
                 // Second click — drop the object
                 attachedObject.SendMessage("hide", SendMessageOptions.DontRequireReceiver); // hide the piece name when dropped
-                isShowingLabel = false;
                 SpaceStation.ATpiece.Add(attachedObject);
                 attachedObject = null;
 

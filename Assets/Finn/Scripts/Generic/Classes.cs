@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -108,6 +110,7 @@ public class Squadron
     public Vector2 target;
     public bool targetSet;
     public List<int> AIidx;
+    public RVOAI enemy;
     public int leadAI;
 }
 public class FormationData
@@ -138,17 +141,30 @@ public struct DynamicButton
     public string text;
     public Action function;
 }
+public struct WeaponData
+{
+    public float shootingSpeed;
+    public float damage;
+    public float range;
+    public float3 positionOffset;
+    public float bulletSpeed;
+    [HideInInspector]
+    public float nextFireTime;
+}
 [System.Serializable]
-public struct RVOAIData
+public struct RVOAIData : IComponentData
 {
     public float maxSpeed;
     public float currentSpeed;
     public int health;
+    public FixedList512Bytes<WeaponData> weapons;
     public ShipType type;
+    public Faction faction;
 }
 public class RVOAI
 {
     public RVOAIData data;
+    public Entity entity;
     public Vector2 pos;
     public GameObject gameObjectRef;
     public Vector2 target;
@@ -156,10 +172,13 @@ public class RVOAI
     public Vector2 vel;
     public float rad;
     public RVOAI followTarget;
-    public bool enemyTarget;
+    public bool flybyTarget;
+    public bool attackingTarget;
     public bool targetSet;
     public float distanceToKeep;
     public Squadron squadron;
+    public int nextShoot;
+    public int nextShootIdx;
 }
 [System.Serializable]
 public class SaveableAIGroup

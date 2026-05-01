@@ -35,6 +35,7 @@ public class SelectTest : MonoBehaviour
     UIManager uiManager;
     SelectionMode selectionMode = SelectionMode.None;
     Squadron selectedSquad;
+    EnemyManager enemyManager;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
@@ -51,6 +52,7 @@ public class SelectTest : MonoBehaviour
         inspector = FindFirstObjectByType<Inspector>();
         alliedManager = FindFirstObjectByType<AlliedManager>();
         uiManager = FindFirstObjectByType<UIManager>();
+        enemyManager = FindFirstObjectByType<EnemyManager>();
         SelectedObjectsDirty();
     }
 
@@ -237,12 +239,31 @@ public class SelectTest : MonoBehaviour
         uiManager.UpdateButtonLayout(buttons);
         inspector.InspectWithoutCam(inspectable);
     }
+    public void UpdateEnemies()
+    {
+        enemies.Clear();
+        for (int i = 0; i < enemyManager.allEnemies.Count; i++)
+        {
+            enemies.Add(AIManager.AIs[enemyManager.allEnemies[i]]);
+        }
+    }
+    public void UpdateAllies()
+    {
+        selectableObjs.Clear();
+        selectableGameObjs.Clear();
+        for (int i = 0; i < alliedManager.allAllied.Count; i++)
+        {
+            selectableObjs.Add(AIManager.AIs[alliedManager.allAllied[i]]);
+            selectableGameObjs.Add(AIManager.AIs[alliedManager.allAllied[i]].gameObjectRef);
+        }
+    }
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(selectedSquad);
         bool mouseOverUI = EventSystem.current.IsPointerOverGameObject();
-        selectableObjs = AIManager.AIs;
+
+        UpdateAllies();
+        UpdateEnemies();
         lineRenderer.ClearLines();
         Vector2 mouseScreenPos = mousePosInput.ReadValue<Vector2>();
         Vector3 screenPointWithDepth = new Vector3(mouseScreenPos.x, mouseScreenPos.y, Mathf.Abs(Camera.main.gameObject.transform.position.z));
@@ -383,17 +404,53 @@ public class SelectTest : MonoBehaviour
             selectionRect = new Rect();
             selectionStartPos = new Vector2();
             screenSelectionRect = new Rect();
-            if (selectedSquad != null)
+            GameObject parentedPlanet;
+            for (int i = 0; i < selectablePlntGmObjs.Count; i++)
             {
-                alliedManager.SendSquadron(selectedSquad, mouseWorldPos);
+                if (Vector2.Distance(mouseWorldPos, selectablePlntGmObjs[i].transform.position) < selectablePlntGmObjs[i].GetComponent<SphereCollider>().radius + 20)
+                {
+                    parentedPlanet = selectablePlntGmObjs[i];
+                    break;
+                }
+            }
+            RVOAI attacking = null;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                if (Vector2.Distance(mouseWorldPos, enemies[i].pos) < 2)
+                {
+                    attacking = enemies[i];
+                    break;
+                }
+            }
+            if (attacking != null)
+            {
+                if (selectedSquad != null)
+                {
+                    alliedManager.AttackSquadron(selectedSquad, attacking);
+                }
+                else
+                {
+                    for (int i = 0; i < selectedObjs.Count; i++)
+                    {
+                        AIManager.AttackAI(selectedObjs[i], attacking, true);
+                    }
+                }
             }
             else
             {
-                for (int i = 0; i < selectedObjs.Count; i++)
+                if (selectedSquad != null)
                 {
-                    AIManager.SendAI(selectedObjs[i], mouseWorldPos, selectedObjs.Count * 0.6f);
+                    alliedManager.SendSquadron(selectedSquad, mouseWorldPos);
+                }
+                else
+                {
+                    for (int i = 0; i < selectedObjs.Count; i++)
+                    {
+                        AIManager.SendAI(selectedObjs[i], mouseWorldPos, selectedObjs.Count * 0.6f);
+                    }
                 }
             }
+
 
         }
         if (mouseLeftClick.IsPressed() && !mouseOverUI)

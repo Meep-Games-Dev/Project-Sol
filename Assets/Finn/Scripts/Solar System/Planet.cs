@@ -19,6 +19,8 @@ public class Planet : MonoBehaviour
     private readonly System.Random rnd = new();
     public float rotationalSpeed;
 
+    public float localRotationalSpeed;
+
     public Color planetColor;
     public Color atmosphereColor;
     public Color cloudColor;
@@ -34,6 +36,8 @@ public class Planet : MonoBehaviour
     void Start()
     {
         rotationalSpeed = UnityEngine.Random.Range(0.1f, 1f);
+        localRotationalSpeed = UnityEngine.Random.Range(0.1f, 0.5f);
+
         string part1 = prefixes[rnd.Next(prefixes.Length)];
 
         string part2 = middles[rnd.Next(middles.Length)];
@@ -157,6 +161,10 @@ public class Planet : MonoBehaviour
                 $"Now it is completely uninhabitable with no chance to be restored anytime soon.";
         }
 
+    }
+    private void Update()
+    {
+        transform.Rotate(rotationalSpeed * Time.deltaTime * Vector3.right);
     }
 
 }

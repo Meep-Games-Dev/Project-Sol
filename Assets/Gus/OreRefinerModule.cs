@@ -1,8 +1,8 @@
-using UnityEngine;
-using System.Collections.Generic;
 using Station;
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 
@@ -12,7 +12,7 @@ namespace OreRefiner
     {
         public int UpCost = 2500;
         public int level = 1;
-        public Dictionary<int, int> time = new Dictionary<int, int> ()
+        public Dictionary<int, int> time = new Dictionary<int, int>()
         {
             {1, 5000},
             {2, 4500},
@@ -28,13 +28,13 @@ namespace OreRefiner
         private bool isDragging = false;
         private Camera mainCamera;
         private Vector3 offset;
-        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f); 
-        public GameObject objectToShow; 
+        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f);
+        public GameObject objectToShow;
         public void show()
         {
             if (objectToShow != null)
             {
-                objectToShow.GetComponent<RectTransform>().position = setPosition; 
+                objectToShow.GetComponent<RectTransform>().position = setPosition;
                 objectToShow.SetActive(true);
             }
         }
@@ -56,21 +56,21 @@ namespace OreRefiner
 
         void Update()
         {
-            if(transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
+            if (transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
             {
                 transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), 0f);
             }
         }
-    
-        
+
+
         void Activation()//on build.cs or RootSpaceStation.cs call Structual_piece.Activation(); to start the function
         {
             //control for the piece
             // The level influences the number of resources needed to refine into 50 food
-            if ((SpaceStation.resources[ResourceType.Ore] >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level)))) // refines Carbon and H2O into Food
+            if ((SpaceStation.resources[(int)Resources.Ore].amount >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level)))) // refines Carbon and H2O into Food
             {
-                SpaceStation.resources[ResourceType.Ore] -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
-                SpaceStation.resources[ResourceType.Metals] += 15;
+                SpaceStation.resources[(int)Resources.Ore].amount -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
+                SpaceStation.resources[(int)Resources.RefinedMetal].amount += 15;
             }
         }
         void upgrade() // in space station.cs 
@@ -79,11 +79,11 @@ namespace OreRefiner
             {
                 if (SpaceStation.credits >= UpCost)
                 {
-                    SpaceStation.resources[ResourceType.Credits] -= UpCost;
+                    SpaceStation.resources[(int)Resources.Credits].amount -= UpCost;
                     level += 1;
                     UpCost += 2500;
                 }
             }
-        }      
+        }
     }
 }

@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Vertex Mat
+  m_Name: Allied Vertex Mat
   m_Shader: {fileID: -6465566751694194690, guid: 8b38e1cdc7a05aa47b16d73a2d28e14c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
