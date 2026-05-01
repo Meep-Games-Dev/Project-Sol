@@ -32,9 +32,12 @@ public class Planet : MonoBehaviour
     public float cloudCover;
 
     public float size;
+
+    public Faction homePlanetOf;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+
         rotationalSpeed = UnityEngine.Random.Range(0.1f, 1f);
         localRotationalSpeed = UnityEngine.Random.Range(0.1f, 0.5f);
 
@@ -65,7 +68,7 @@ public class Planet : MonoBehaviour
             }
             else
             {
-                if (rnd.Next(0, 100) > 90)
+                if (rnd.Next(0, 100) > 40)
                 {
                     resource.amount = rnd.Next(0, 50);
                 }
@@ -159,6 +162,10 @@ public class Planet : MonoBehaviour
             planetDescription = $"This planet {descriptionPart0[rnd.Next(0, descriptionPart0.Length)]} {descriptionPart1[rnd.Next(0, descriptionPart1.Length)]}, but now it is completely unlivable." +
                 $"{descriptionPart2[rnd.Next(0, descriptionPart2.Length)]}, a result from {descriptionPart3[rnd.Next(0, descriptionPart3.Length)]} forcing the Empire to abandon this planet." +
                 $"Now it is completely uninhabitable with no chance to be restored anytime soon.";
+        }
+        if (homePlanetOf != Faction.None)
+        {
+            planetDescription = "This planet is the home planet of the " + StringUtils.Nicify(homePlanetOf.ToString()) + "\n" + planetDescription;
         }
 
     }

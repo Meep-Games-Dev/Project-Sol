@@ -34,10 +34,14 @@ public class SolarSystemManager : MonoBehaviour
     public Material orbitMat;
     public int resolution;
     public Camera cam;
+    public AlliedManager alliedManager;
+    public EnemyManager enemyManager;
+    public CameraMovement camMove;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         //Generate(size, 5, new Vector2(0, 0));
+
     }
 
     // Update is called once per frame
@@ -71,7 +75,17 @@ public class SolarSystemManager : MonoBehaviour
     public void Generate(int size, int planets, Vector2 centerPosition)
     {
         Debug.Log("Generating solar system");
+        alliedManager = FindFirstObjectByType<AlliedManager>();
+        enemyManager = FindFirstObjectByType<EnemyManager>();
+        camMove = FindFirstObjectByType<CameraMovement>();
         Random.InitState((int)System.DateTime.Now.Ticks);
+        int enemyHome = Random.Range(0, planets);
+        int alliedHome = Random.Range(0, planets);
+        while (enemyHome == alliedHome)
+        {
+            alliedHome = Random.Range(0, planets);
+        }
+
         for (int i = 0; i < planets; i++)
         {
 
@@ -140,12 +154,27 @@ public class SolarSystemManager : MonoBehaviour
             planet.surfaceOffset = surfaceOffset;
             planet.size = planetSize;
             planet.cloudCover = cloudCover;
+            if (i == enemyHome)
+            {
+                enemyManager.homePlanet = planet;
+                planet.homePlanetOf = Faction.Enemy;
+            }
+            else if (i == alliedHome)
+            {
+                alliedManager.homePlanet = planet;
+                planet.homePlanetOf = Faction.Freindly;
+                camMove.transform.position = planet.gameObject.transform.position;
+            }
+            else
+            {
+                planet.homePlanetOf = Faction.None;
+            }
 
             planetComponentList.Add(instantiatedPlanet.GetComponent<Planet>());
             planetsList.Add(instantiatedPlanet);
 
         }
-
+        camMove.planets = planetComponentList;
         //Each batch is a max of 1023 asteroids
         int totalFullBatches = totalAsteroids / 1023;
 
@@ -255,7 +284,7 @@ public class SolarSystemManager : MonoBehaviour
             planetsList.Add(instantiatedPlanet);
 
         }
-
+        camMove.planets = planetComponentList;
         //Each batch is a max of 1023 asteroids
         int totalFullBatches = totalAsteroids / 1023;
 

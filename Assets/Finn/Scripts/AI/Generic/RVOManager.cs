@@ -57,15 +57,19 @@ public class RVOManager : MonoBehaviour
         planets = solarSystemManager.planetComponentList;
         alliedManager = FindFirstObjectByType<AlliedManager>();
     }
-    public void SpawnAIs()
+    public async void SpawnAIs()
     {
+        while (enemyManager.homePlanet == null || alliedManager.homePlanet == null)
+        {
+            await Task.Yield();
+        }
         for (int i = 0; i < AICount; i++)
         {
-            SpawnAI(new Vector2(UnityEngine.Random.Range(-50, 50), UnityEngine.Random.Range(-50, 50)), alliedAIPrefabs[0]);
+            SpawnAI(new Vector2(alliedManager.homePlanet.gameObject.transform.position.x + UnityEngine.Random.Range(0, 50), alliedManager.homePlanet.gameObject.transform.position.y + UnityEngine.Random.Range(0, 50)), alliedAIPrefabs[0]);
         }
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < AICount; i++)
         {
-            SpawnAI(new Vector2(UnityEngine.Random.Range(-50, 50), UnityEngine.Random.Range(-50, 50)), enemyAIPrefabs[0]);
+            SpawnAI(new Vector2(enemyManager.homePlanet.gameObject.transform.position.x + UnityEngine.Random.Range(0, 50), enemyManager.homePlanet.gameObject.transform.position.y + UnityEngine.Random.Range(0, 50)), enemyAIPrefabs[0]);
         }
     }
     public async void SpawnAI(Vector2 pos, GameObject prefab)
@@ -371,17 +375,17 @@ public class RVOManager : MonoBehaviour
     void Update()
     {
         var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-        if (!hasSpawned)
-        {
+        //if (!hasSpawned)
+        //{
 
-            using var query = em.CreateEntityQuery(ComponentType.ReadOnly<ShipLibraryItem>());
+        //    using var query = em.CreateEntityQuery(ComponentType.ReadOnly<ShipLibraryItem>());
 
-            if (!query.IsEmpty)
-            {
-                SpawnAIs();
-                hasSpawned = true;
-            }
-        }
+        //    if (!query.IsEmpty)
+        //    {
+        //        SpawnAIs();
+        //        hasSpawned = true;
+        //    }
+        //}
         NativeArray<float2> positions = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);
         NativeArray<float2> velocities = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);
         NativeArray<float2> goals = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);

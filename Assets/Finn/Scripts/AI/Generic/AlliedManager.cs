@@ -19,6 +19,7 @@ public class AlliedManager : MonoBehaviour
     public UIManager uiManager;
     public EntityManager entityManager;
     public Entity bulletPrefab;
+    public Planet homePlanet;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

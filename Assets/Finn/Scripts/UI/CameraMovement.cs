@@ -1,3 +1,7 @@
+using JetBrains.Annotations;
+using NUnit.Framework;
+using System.Collections.Generic;
+using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -19,7 +23,8 @@ public class CameraMovement : MonoBehaviour
     public float parallaxSpeed = 0.01f;
     public float cameraZoomSpeed = 1;
     public float cameraDistanceMult = 0.5f;
-
+    public List<Planet> planets;
+    public float cameraPickupRad;
     // Start is called once before the first execution of Update after the MonoBehaviour is created\
     private void Awake()
     {
@@ -56,7 +61,23 @@ public class CameraMovement : MonoBehaviour
         Vector2 offset = new Vector2(transform.position.x, transform.position.y) * parallaxSpeed;
         skyboxObj.GetComponent<MeshRenderer>().sharedMaterial.SetVector("_CameraPos", offset);
         //Debug.Log(skyboxObj.GetComponent<MeshRenderer>().sharedMaterial.GetVector("_CameraPos"));
-
+        bool hasParent = false;
+        for (int j = 0; j < planets.Count; j++)
+        {
+            SphereCollider collider = planets[j].gameObject.GetComponentInChildren<SphereCollider>();
+            if (Vector2.Distance((Vector2)planets[j].gameObject.transform.position, (Vector2)transform.position) < (collider.radius * Mathf.Max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + cameraPickupRad)
+            {
+                transform.parent = planets[j].gameObject.transform;
+                hasParent = true;
+            }
+        }
+        if (!hasParent)
+        {
+            if (transform.parent != null)
+            {
+                transform.parent = null;
+            }
+        }
         if (scrollDir != 0 && !mouseOverUI)
         {
             if (scrollDir < 0 && cam.transform.position.z > -6000)

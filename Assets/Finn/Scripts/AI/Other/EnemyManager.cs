@@ -10,6 +10,7 @@ public class EnemyManager : MonoBehaviour
     public List<int> allEnemies = new List<int>();
     public List<Squadron> squadrons = new List<Squadron>();
     public List<Resource> resourcesOwned = new List<Resource>();
+    public Planet homePlanet;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

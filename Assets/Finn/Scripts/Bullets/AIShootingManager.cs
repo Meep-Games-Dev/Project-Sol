@@ -6,8 +6,6 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-[UpdateAfter(typeof(TransformSystemGroup))]
 [BurstCompile]
 public partial struct AIShootingManager : ISystem
 {

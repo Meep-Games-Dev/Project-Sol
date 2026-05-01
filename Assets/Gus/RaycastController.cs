@@ -1,13 +1,12 @@
-using System;
 //using System.Numerics;
 using JetBrains.Annotations;
-using UnityEngine;
-using UnityEngine.InputSystem;
+using Station;
+using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
-using Station;
-using DrawConnecter;
 using UnityEditor.ShaderGraph.Internal;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class RayController : MonoBehaviour
 {
@@ -39,11 +38,11 @@ public class RayController : MonoBehaviour
     {
         mousePosition.Disable();
         leftMouse.Disable();
-        Rotate.Disable();  
+        Rotate.Disable();
         rightMouse.Disable();
         kill.Disable();
     }
-        void Awake()
+    void Awake()
     {
         input = new InputSystem_Actions();
         mousePosition = input.Player.MousePos;
@@ -93,7 +92,7 @@ public class RayController : MonoBehaviour
                 attachedObject.transform.Rotate(0, 0, 90);
                 Debug.Log("Rotated piece: " + attachedObject.name);
             }
-            if(kill.WasPressedThisFrame())
+            if (kill.WasPressedThisFrame())
             {
                 Destroy(attachedObject);
                 attachedObject = null;
@@ -107,8 +106,7 @@ public class RayController : MonoBehaviour
             {
                 // Second click — drop the object
                 attachedObject.SendMessage("hide", SendMessageOptions.DontRequireReceiver); // hide the piece name when dropped
-                isShowingLabel = false;
-                SpaceStation.ATpiece.Add(attachedObject); 
+                SpaceStation.ATpiece.Add(attachedObject);
                 attachedObject = null;
 
             }
@@ -118,7 +116,7 @@ public class RayController : MonoBehaviour
                 RaycastHit hit;
                 if (Physics.Raycast(new Vector3(mouseWorldPos.x, mouseWorldPos.y, -50), Vector3.forward, out hit))
                 {
-                    
+
                     attachedObject = hit.collider.gameObject;
                     Debug.Log("Attached: " + attachedObject.name);
                 }
@@ -139,7 +137,7 @@ public class RayController : MonoBehaviour
     {
         ClearPieces();
         float distance = Vector3.Distance(start, finish);
-        Vector3 direction = finish - start; 
+        Vector3 direction = finish - start;
         float Xval = -start.x;
         float Yval = -start.y;
 
@@ -154,7 +152,7 @@ public class RayController : MonoBehaviour
 
         //Quaternion rotation = Quaternion.identity;
         Quaternion rotation = Quaternion.Euler(direction); // just stays at a straight line
-        
+
         //GameObject instantiatedPiece = Instantiate(myPrefab, position, rotation);
         /*
         GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
@@ -166,18 +164,18 @@ public class RayController : MonoBehaviour
         instantiatedPiece3.transform.position = new Vector3(instantiatedPiece3.transform.position.x, instantiatedPiece3.transform.position.y, (-Yval > 0) ? 90 : -90);
         instantiatedPiece3.transform.localScale = new Vector3(Yval, 1, 1);
         */
-        GameObject instantiatedPiece = Instantiate(myPrefab, start + new Vector3((start.y == 0) ? start.x <= 0 ? distance/2 : -distance/2 : 0, (start.x == 0) ? start.y <= 0 ? distance/2 : -distance/2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0));
+        GameObject instantiatedPiece = Instantiate(myPrefab, start + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0));
         Connectors.Add(instantiatedPiece);
         instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
 
-        
+
 
 
         // draw the connector pieces
     }
     void ClearPieces()
     {
-        if(Connectors.Count == 0)
+        if (Connectors.Count == 0)
         {
             return;
         }

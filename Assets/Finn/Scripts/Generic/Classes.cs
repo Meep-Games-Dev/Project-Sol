@@ -81,7 +81,6 @@ public enum Resources
     EnergyCells,
     Population,
     Credits,
-    None
 }
 public enum InspectableTypes
 {
@@ -286,7 +285,8 @@ public enum PathfindingStatus
 public enum Faction
 {
     Freindly,
-    Enemy
+    Enemy,
+    None
 }
 public class PathFinderAI
 {

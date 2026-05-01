@@ -331,6 +331,7 @@ public class SelectTest : MonoBehaviour
                         Destroy(inspector.tracking);
                     }
                 }
+                currentInspectedObj = null;
                 if (hit.collider.gameObject.TryGetComponent<Inspectable>(out inspectableObj))
                 {
                     inspector.Inspect(inspectableObj);
@@ -352,31 +353,35 @@ public class SelectTest : MonoBehaviour
                     selectionMode = SelectionMode.Single;
                     inspector.ShowInspector();
                 }
-
-                if (currentInspectedObj.type == InspectableTypes.Ally)
+                if (currentInspectedObj != null)
                 {
-                    //Debug.Log("selected " + currentInspectedObj.name + " in squadron " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name);
-                    List<DynamicButton> buttons = new List<DynamicButton>();
 
-                    if (AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron != null)
+
+                    if (currentInspectedObj.type == InspectableTypes.Ally)
                     {
-                        buttons.Add(new DynamicButton
+                        //Debug.Log("selected " + currentInspectedObj.name + " in squadron " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name);
+                        List<DynamicButton> buttons = new List<DynamicButton>();
+
+                        if (AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron != null)
                         {
-                            function = RemoveFromSquad,
-                            text = "Remove from " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name
-                        });
-                        uiManager.UpdateButtonLayout(buttons);
+                            buttons.Add(new DynamicButton
+                            {
+                                function = RemoveFromSquad,
+                                text = "Remove from " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name
+                            });
+                            uiManager.UpdateButtonLayout(buttons);
+                        }
                     }
-                }
-                else if (currentInspectedObj.type == InspectableTypes.Planet)
-                {
-                    List<string> resources = new List<string>();
-                    resources.Add("Resources");
-                    for (int i = 0; i < currentInspectedObj.gameObject.GetComponent<Planet>().planetResources.Count; i++)
+                    else if (currentInspectedObj.type == InspectableTypes.Planet)
                     {
-                        resources.Add(StringUtils.Nicify(currentInspectedObj.gameObject.GetComponent<Planet>().planetResources[i].type.ToString()).ToLower() + " : " + currentInspectedObj.gameObject.GetComponent<Planet>().planetResources[i].amount);
+                        List<string> resources = new List<string>();
+                        resources.Add("Resources");
+                        for (int i = 0; i < currentInspectedObj.gameObject.GetComponent<Planet>().planetResources.Count; i++)
+                        {
+                            resources.Add(StringUtils.Nicify(currentInspectedObj.gameObject.GetComponent<Planet>().planetResources[i].type.ToString()).ToLower() + " : " + currentInspectedObj.gameObject.GetComponent<Planet>().planetResources[i].amount);
+                        }
+                        uiManager.UpdateInspectorDropdown(resources);
                     }
-                    uiManager.UpdateInspectorDropdown(resources);
                 }
             }
             else
