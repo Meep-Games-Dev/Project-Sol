@@ -409,7 +409,7 @@ public class AIManager : MonoBehaviour
 
     public void Update()
     {
-        Vector2 camPos = camMovement.position;
+        Vector2 camPos = camMovement.transform.position;
         simulatedSectors.Clear();
         for (int x = 0; x < simulationRange; x++)
         {

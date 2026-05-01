@@ -147,7 +147,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 73.7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
       propertyPath: m_LocalPosition.y
@@ -155,7 +155,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 33.8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
       propertyPath: m_LocalRotation.w
@@ -186,6 +186,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
+      propertyPath: m_RayTraceProcedural
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: fb39d0f8b9a24c74d97abd92359fff72, type: 2}
@@ -207,6 +211,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
       insertIndex: -1
       addedObject: {fileID: -1420537281388723391}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9094866657917197134}
   m_SourcePrefab: {fileID: 100100000, guid: 8f2580645e4f71b4f92ff3f7201cd521, type: 3}
 --- !u!4 &3516296215545182655 stripped
 Transform:
@@ -233,3 +240,16 @@ MonoBehaviour:
   type: 0
   title: 
   description: 
+--- !u!114 &9094866657917197134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4289595544938914565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15e28f56242eb50438ec6205a73d3e70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LargeBounds
+  size: {x: 10, y: 10, z: 10}

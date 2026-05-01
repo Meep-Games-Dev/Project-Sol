@@ -168,7 +168,7 @@ public class SolarSystemManager : MonoBehaviour
             {
                 alliedManager.homePlanet = planet;
                 planet.homePlanetOf = Faction.Freindly;
-                camMove.transform.position = planet.gameObject.transform.position;
+                camMove.GetComponent<Rigidbody>().MovePosition(new Vector3(planet.gameObject.transform.position.x, planet.gameObject.transform.position.y, planet.gameObject.transform.position.z - 30));
             }
             else
             {

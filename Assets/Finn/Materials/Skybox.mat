@@ -49,7 +49,7 @@ Material:
     - _Speed: 13.41
     - _edge: 0.001
     m_Colors:
-    - _CameraPos: {r: 0, g: 0, b: 0, a: 0}
+    - _CameraPos: {r: 2.45133, g: 0.0701, b: 0, a: 0}
     - _Color: {r: 1, g: 0.7425743, b: 0, a: 1}
     - _OtherColor: {r: 0.039649352, g: 0.040341355, b: 0.084905684, a: 1}
     - _Up: {r: 1.51, g: 0, b: 0, a: 0}

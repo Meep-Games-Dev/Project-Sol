@@ -849,7 +849,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -89.3363
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -2632,7 +2632,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -89.3363
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4079,7 +4079,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -89.3363
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4499,7 +4499,8 @@ GameObject:
   - component: {fileID: 961739751}
   - component: {fileID: 961739750}
   - component: {fileID: 961739755}
-  - component: {fileID: 961739754}
+  - component: {fileID: 961739756}
+  - component: {fileID: 961739757}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -4619,39 +4620,12 @@ Transform:
   m_GameObject: {fileID: 961739749}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 72.2, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 741550238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!50 &961739754
-Rigidbody2D:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 961739749}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 15
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
 --- !u!114 &961739755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4665,19 +4639,66 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraMovement
   rb: {fileID: 0}
-  cameraMoveForce: 500
-  cameraRBMaxSpeed: 5
+  cameraMoveForce: 6
+  cameraRBMaxSpeed: 700
   stoppingForce: 2
   cam: {fileID: 961739752}
-  parrallax: {fileID: 0}
   position: {x: 0, y: 0}
   skyboxObj: {fileID: 699123746}
   parallaxSpeed: 0.01
   cameraZoomSpeed: 6
-  cameraDistanceMult: 0.05
+  cameraDistanceMult: 0.5
   planets: []
   cameraPickupRad: 50
   follow: {fileID: 0}
+--- !u!54 &961739756
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961739749}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 1
+  m_Constraints: 112
+  m_CollisionDetection: 2
+--- !u!65 &961739757
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 961739749}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 8, y: 8, z: 8}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &966337611
 GameObject:
   m_ObjectHideFlags: 0
@@ -9727,7 +9748,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -89.3363
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 5056629917768109104, guid: 166b51874cecd414c83a114d13c5a9d2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -9890,15 +9911,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8499026053755787730, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
       propertyPath: m_LocalScale.x
-      value: 100
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8499026053755787730, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
       propertyPath: m_LocalScale.y
-      value: 100
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8499026053755787730, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
       propertyPath: m_LocalScale.z
-      value: 100
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8499026053755787730, guid: 334c2e5a7ca761e489646d1da3d55cda, type: 3}
       propertyPath: m_LocalPosition.x
