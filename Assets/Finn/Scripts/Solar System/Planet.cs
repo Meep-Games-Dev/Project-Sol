@@ -38,7 +38,7 @@ public class Planet : MonoBehaviour
     void Start()
     {
 
-        rotationalSpeed = UnityEngine.Random.Range(0.1f, 1f);
+        rotationalSpeed = UnityEngine.Random.Range(0.01f, 0.2f);
         localRotationalSpeed = UnityEngine.Random.Range(0.1f, 0.5f);
 
         string part1 = prefixes[rnd.Next(prefixes.Length)];

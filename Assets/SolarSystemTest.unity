@@ -4677,6 +4677,7 @@ MonoBehaviour:
   cameraDistanceMult: 0.05
   planets: []
   cameraPickupRad: 50
+  followOffset: {x: 0, y: 0}
 --- !u!1 &966337611
 GameObject:
   m_ObjectHideFlags: 0

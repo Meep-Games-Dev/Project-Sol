@@ -1,6 +1,7 @@
 using JetBrains.Annotations;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -25,6 +26,10 @@ public class CameraMovement : MonoBehaviour
     public float cameraDistanceMult = 0.5f;
     public List<Planet> planets;
     public float cameraPickupRad;
+    public Transform follow;
+    bool following = false;
+    private Vector3 lastFollowPos;
+    private List<SphereCollider> planetColliders = new List<SphereCollider>();
     // Start is called once before the first execution of Update after the MonoBehaviour is created\
     private void Awake()
     {
@@ -33,6 +38,7 @@ public class CameraMovement : MonoBehaviour
         movement = PlayerInput.Main.Movement;
         scroll = PlayerInput.Main.Scroll;
         rb = GetComponent<Rigidbody2D>();
+
     }
     void Start()
     {
@@ -40,6 +46,17 @@ public class CameraMovement : MonoBehaviour
 
     }
 
+    public async void WaitForPlanetColliders()
+    {
+        while (planetColliders.Count != planets.Count)
+        {
+            for (int i = 0; i < planets.Count; i++)
+            {
+                planetColliders.Add(planets[i].gameObject.GetComponentInChildren<SphereCollider>());
+            }
+            await Task.Yield();
+        }
+    }
     public void OnEnable()
     {
         movement.Enable();
@@ -62,22 +79,32 @@ public class CameraMovement : MonoBehaviour
         skyboxObj.GetComponent<MeshRenderer>().sharedMaterial.SetVector("_CameraPos", offset);
         //Debug.Log(skyboxObj.GetComponent<MeshRenderer>().sharedMaterial.GetVector("_CameraPos"));
         bool hasParent = false;
-        for (int j = 0; j < planets.Count; j++)
+        if (planetColliders.Count == planets.Count)
         {
-            SphereCollider collider = planets[j].gameObject.GetComponentInChildren<SphereCollider>();
-            if (Vector2.Distance((Vector2)planets[j].gameObject.transform.position, (Vector2)transform.position) < (collider.radius * Mathf.Max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + cameraPickupRad)
+            for (int j = 0; j < planets.Count; j++)
             {
-                transform.parent = planets[j].gameObject.transform;
-                hasParent = true;
+                SphereCollider collider = planetColliders[j];
+                if (Vector2.Distance((Vector2)planets[j].gameObject.transform.position, (Vector2)transform.position) < (collider.radius * Mathf.Max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + cameraPickupRad)
+                {
+                    follow = planets[j].gameObject.transform;
+                    following = true;
+                    hasParent = true;
+                    lastFollowPos = follow.position;
+                }
             }
+        }
+        else
+        {
+            WaitForPlanetColliders();
         }
         if (!hasParent)
         {
-            if (transform.parent != null)
+            if (following)
             {
-                transform.parent = null;
+                following = false;
             }
         }
+
         if (scrollDir != 0 && !mouseOverUI)
         {
             if (scrollDir < 0 && cam.transform.position.z > -6000)
@@ -120,6 +147,15 @@ public class CameraMovement : MonoBehaviour
         else
         {
             rb.AddForce(-transform.position * 500);
+        }
+    }
+    private void LateUpdate()
+    {
+        if (following && follow != null)
+        {
+            Vector3 delta = follow.position - lastFollowPos;
+            transform.position += delta;
+            lastFollowPos = follow.position;
         }
     }
 }

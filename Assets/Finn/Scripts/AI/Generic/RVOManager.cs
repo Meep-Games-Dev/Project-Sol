@@ -449,6 +449,7 @@ public class RVOManager : MonoBehaviour
                 if (Vector2.Distance(planets[j].gameObject.transform.position, AIs[i].gameObjectRef.transform.position) < (collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + AIPickupRadius)
                 {
                     AIs[i].gameObjectRef.transform.parent = planets[j].gameObject.transform;
+                    AIs[i].gameObjectRef.GetComponentInChildren<TrailRenderer>().enabled = false;
                     hasParent = true;
                 }
             }
@@ -457,6 +458,7 @@ public class RVOManager : MonoBehaviour
                 if (AIs[i].gameObjectRef.transform.parent != null)
                 {
                     AIs[i].gameObjectRef.transform.parent = null;
+                    AIs[i].gameObjectRef.GetComponentInChildren<TrailRenderer>().enabled = true;
                 }
 
             }
