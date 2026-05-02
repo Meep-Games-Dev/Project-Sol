@@ -293,6 +293,8 @@ public class SelectTest : MonoBehaviour
             }
 
         }
+
+
         if (!hoverTextActive)
         {
             inspector.HideHoverText();
@@ -452,6 +454,7 @@ public class SelectTest : MonoBehaviour
                     for (int i = 0; i < selectedObjs.Count; i++)
                     {
                         AIManager.SendAI(AIManager.AIs[selectedObjs[i]], mouseWorldPos, selectedObjs.Count * 0.6f);
+
                     }
                 }
             }

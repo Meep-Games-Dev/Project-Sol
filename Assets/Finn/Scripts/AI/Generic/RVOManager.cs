@@ -79,7 +79,7 @@ public class RVOManager : MonoBehaviour
             Vector3 finalPos = (Vector3)(randomPoint * finalRadius) + alliedManager.homePlanet.transform.position;
             SpawnAI(finalPos, alliedAIPrefabs[0]);
         }
-        for (int i = 0; i < AICount; i++)
+        for (int i = 0; i < UnityEngine.Random.Range(100, 150); i++)
         {
             Vector2 randomPoint = UnityEngine.Random.insideUnitCircle;
 
@@ -189,6 +189,109 @@ public class RVOManager : MonoBehaviour
 
 
     }
+    public async void SpawnAIAndSend(Vector2 pos, GameObject prefab, Vector2 target, float? speed = null)
+    {
+        GameObject instantiatedObj = Instantiate(prefab, pos, Quaternion.identity);
+        SphereCollider collider = instantiatedObj.GetComponent<SphereCollider>();
+        AIStats stats = instantiatedObj.GetComponent<AIStats>();
+        float rad = collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y);
+        var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+        using var query = em.CreateEntityQuery(ComponentType.ReadOnly<ShipLibraryItem>());
+        Entity libraryEntity;
+
+        while (!query.HasSingleton<ShipLibraryItem>())
+        {
+            await Task.Yield();
+        }
+        libraryEntity = query.GetSingletonEntity();
+        DynamicBuffer<ShipLibraryItem> library = em.GetBuffer<ShipLibraryItem>(libraryEntity);
+        ShipType type = instantiatedObj.GetComponent<AIStats>().type;
+        Faction faction = instantiatedObj.GetComponent<AIStats>().faction;
+
+        AILifeCycle lifeCycle = instantiatedObj.GetComponent<AILifeCycle>();
+
+
+
+
+        Entity prefabToInstantiate = Entity.Null;
+        for (int i = 0; i < library.Length; i++)
+        {
+            if (library[i].Type == type && library[i].Faction == faction)
+            {
+                prefabToInstantiate = library[i].Prefab;
+                break;
+            }
+        }
+        if (prefabToInstantiate != Entity.Null)
+        {
+            Entity newEntity = em.Instantiate(prefabToInstantiate);
+            LocalTransform entityTransform = em.GetComponentData<LocalTransform>(newEntity);
+            entityTransform.Position = new float3(pos.x, pos.y, 0);
+            em.SetComponentData(newEntity, entityTransform);
+            Guid id = Guid.NewGuid();
+            lifeCycle.AI = id;
+            lifeCycle.RVOManager = this;
+            RVOAI ai = new RVOAI
+            {
+                pos = instantiatedObj.transform.position,
+                vel = Vector2.zero,
+                gameObjectRef = instantiatedObj,
+                rad = rad + AIRadiusBuffer,
+                lifeCycle = lifeCycle,
+                id = id
+            };
+            ai.entity = newEntity;
+
+            if (speed != null)
+            {
+                ai.data.maxSpeed = speed.Value;
+            }
+
+            FixedList512Bytes<WeaponData> weapons = new FixedList512Bytes<WeaponData>();
+            for (int i = 0; i < stats.weapons.Count; i++)
+            {
+                weapons.Add(new WeaponData
+                {
+                    shootingSpeed = stats.weapons[i].shootingSpeed,
+                    damage = stats.weapons[i].damage,
+                    positionOffset = instantiatedObj.transform.InverseTransformPoint(stats.weapons[i].transform.position),
+                    range = stats.weapons[i].range,
+                    bulletSpeed = stats.weapons[i].speed,
+                    radius = stats.weapons[i].radius,
+                });
+            }
+
+            RVOAIData data = new RVOAIData
+            {
+                currentSpeed = 0,
+                health = stats.health,
+                maxSpeed = stats.maxSpeed,
+                faction = stats.faction,
+                type = stats.type,
+                weapons = weapons,
+                radius = collider.radius,
+            };
+            ai.data = data;
+
+            em.AddComponentData(ai.entity, data);
+
+            AIs.Add(id, ai);
+            if (data.faction == Faction.Freindly)
+            {
+                alliedManager.allAllied.Add(id);
+            }
+            else if (data.faction == Faction.Enemy)
+            {
+                enemyManager.allEnemies.Add(id);
+            }
+            SendAI(ai, target, 5, false);
+        }
+
+
+
+
+
+    }
     public async Awaitable RemoveAI(Guid AI)
     {
         await Awaitable.NextFrameAsync();
@@ -230,7 +333,6 @@ public class RVOManager : MonoBehaviour
         }
 
         AIs.Remove(AI);
-        Debug.Log("Removed!");
     }
     public void SendAI(RVOAI ai, Vector2 position, float distance, bool disableAttack = true)
     {
@@ -484,6 +586,7 @@ public class RVOManager : MonoBehaviour
             if (attackingIdxs[idx] != Guid.Empty)
             {
                 AttackAI(ai, AIs[attackingIdxs[idx]], true);
+
             }
             ai.pos = ai.gameObjectRef.transform.position;
             bool hasParent = false;
@@ -493,7 +596,7 @@ public class RVOManager : MonoBehaviour
                 if (Vector2.Distance(planets[j].gameObject.transform.position, ai.gameObjectRef.transform.position) < (collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + AIPickupRadius)
                 {
                     ai.gameObjectRef.transform.parent = planets[j].gameObject.transform;
-                    ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().emitting = false;
+                    //ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().emitting = false;
                     hasParent = true;
                 }
             }
@@ -502,8 +605,8 @@ public class RVOManager : MonoBehaviour
                 if (ai.gameObjectRef.transform.parent != null)
                 {
                     ai.gameObjectRef.transform.parent = null;
-                    ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().Clear();
-                    ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().emitting = true;
+                    //ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().Clear();
+                    //ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().emitting = true;
                 }
 
             }
@@ -584,6 +687,12 @@ public class RVOManager : MonoBehaviour
                 Destroy(ai.gameObjectRef);
                 continue;
             }
+            else if (Vector2.Distance(Vector2.zero, ai.pos) > 3600)
+            {
+                em.DestroyEntity(ai.entity);
+                Destroy(ai.gameObjectRef);
+                continue;
+            }
             if (ai.gameObjectRef.transform.position.z != 0)
             {
                 ai.gameObjectRef.transform.position = new Vector3(ai.gameObjectRef.transform.position.x, ai.gameObjectRef.transform.position.y, 0);
@@ -597,6 +706,7 @@ public class RVOManager : MonoBehaviour
                 em.SetComponentData(ai.entity, t);
 
             }
+
         }
         positions.Dispose();
         velocities.Dispose();

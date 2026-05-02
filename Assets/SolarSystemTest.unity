@@ -1351,9 +1351,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyManager
   AIManager: {fileID: 1360453360}
   solarSystemManager: {fileID: 44898788}
-  allEnemies: 
   squadrons: []
   resourcesOwned: []
+  nextRandomSpawn: 0
   homePlanet: {fileID: 0}
   alliedManager: {fileID: 0}
 --- !u!1 &365000475
@@ -6630,7 +6630,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1711d6ec8897eea45bef87c89fd428ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RVOManager
-  activeAIs: 
   planets: []
   solarSystemManager: {fileID: 0}
   maxSpeed: 40
@@ -6642,7 +6641,7 @@ MonoBehaviour:
   AIRadiusBuffer: 0
   obstacleRadiusBuffer: 5
   pushSpeed: 5
-  AIPickupRadius: 50
+  AIPickupRadius: 100
   alliedManager: {fileID: 1360453361}
   enemyManager: {fileID: 358780420}
   AIEnemyDetectionRange: 50
@@ -6660,7 +6659,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AlliedManager
   AIManager: {fileID: 1360453360}
   solarSystemManager: {fileID: 44898788}
-  allAllied: 
   squadrons: []
   resourcesOwned: []
   uiManager: {fileID: 0}

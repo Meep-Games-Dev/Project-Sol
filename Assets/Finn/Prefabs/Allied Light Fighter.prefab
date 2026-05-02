@@ -135,8 +135,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbef9bc89efe7f640be8c10bc0035c14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponStats
-  shootingSpeed: 0.01
-  damage: 8
+  shootingSpeed: 0.1
+  damage: 0.5
   range: 500
   speed: 100
   radius: 0.1
@@ -184,8 +184,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbef9bc89efe7f640be8c10bc0035c14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponStats
-  shootingSpeed: 0.001
-  damage: 0.01
+  shootingSpeed: 0.1
+  damage: 0.5
   range: 500
   speed: 100
   radius: 0.1
@@ -396,6 +396,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   RVOManager: {fileID: 0}
+  teleportPrefab: {fileID: 8219450269446159629, guid: 3bfdfe15502dfc14980052e910fcc30c, type: 3}
   explosionPrefab: {fileID: 5577453845976711255, guid: 96dbd19916313a2408a58942efdd5e12, type: 3}
 --- !u!4 &3309415072924348447 stripped
 Transform:

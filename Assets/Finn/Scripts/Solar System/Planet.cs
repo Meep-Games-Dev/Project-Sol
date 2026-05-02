@@ -13,8 +13,8 @@ public class Planet : MonoBehaviour
     public string readablePlanetType;
     public string readablePlanetResourceAbundance;
     public List<Resource> planetResources = new List<Resource>();
-    private static readonly string[] prefixes = { "Astro", "Zenth", "Kryl", "Xen", "Velt", "Omni", "Quar", "Myn", "Gly", "Alder", "Star" };
-    private static readonly string[] middles = { "o", "ara", "on", "i", "u", "vadi", "etor", "ili", "oi", "in", "of", "ik", "iti" };
+    private static readonly string[] prefixes = { "Astro", "Zenth", "Kryl", "Xen", "Velt", "Omni", "Quar", "Myn", "Gly", "Alder", "Star", "Whoop", "Fa" };
+    private static readonly string[] middles = { "o", "ara", "on", "i", "u", "vadi", "etor", "ili", "oi", "in", "of", "ik", "iti", "elon", "ie", "apper" };
     private readonly System.Random rnd = new();
     public float rotationalSpeed;
 

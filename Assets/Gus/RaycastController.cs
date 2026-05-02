@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Savee;
 
 public class RayController : MonoBehaviour
 {
@@ -68,7 +67,7 @@ public class RayController : MonoBehaviour
             // Move attached object with mouse
             //attachedObject.transform.position = (Vector2)mouseWorldPos
 
-            if(attachedObject.tag != "clone")
+            if (attachedObject.tag != "clone")
             {
                 GameObject clone = Instantiate(attachedObject, mouseWorldPos, Quaternion.identity); // if the piece is a parent, make a child and move that
                 clone.tag = "clone";
@@ -79,7 +78,7 @@ public class RayController : MonoBehaviour
             {
                 attachedObject.transform.position = (Vector2)mouseWorldPos;
             }
-            
+
 
             attachedObject.transform.position = (Vector2)mouseWorldPos;
 
@@ -102,7 +101,7 @@ public class RayController : MonoBehaviour
         {
             if (attachedObject != null)
             {
-                if(attachedObject.transform.position.x <= -7) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
+                if (attachedObject.transform.position.x <= -7) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
                 {
                     ATpiece.Remove(attachedObject);
                     Destroy(attachedObject);
@@ -127,13 +126,13 @@ public class RayController : MonoBehaviour
         }
     }
     public void DrawConnectors()
-    {     
+    {
         DrawConnector(ATpiece);
     }
     void DrawConnector(List<GameObject> list)
     {
         ClearPieces();
-        if(list.Count >= 1)
+        if (list.Count >= 1)
         {
             for (int i = 0; i < list.Count; i++)
             {
@@ -160,7 +159,7 @@ public class RayController : MonoBehaviour
                 // + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0)
                 GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
                 Connectors.Add(instantiatedPiece);
-                instantiatedPiece.transform.position = (start - finish)/2;
+                instantiatedPiece.transform.position = (start - finish) / 2;
                 instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
                 Debug.Log("Drew connector at: " + instantiatedPiece.transform.position);
                 // draw the connector pieces

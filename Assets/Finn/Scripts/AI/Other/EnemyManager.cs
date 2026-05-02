@@ -124,12 +124,21 @@ public class EnemyManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Time.time >= nextRandomSpawn)
+        if (Time.time >= nextRandomSpawn)
         {
-            nextRandomSpawn = UnityEngine.Random.Range(30, 120);
-            int amountToSpawn = (int)UnityEngine.Random.Range(2, 40);
-            Vector2 positionToSpawn = new Vector2();
+            Debug.Log("Spawned!");
+            nextRandomSpawn = Time.time + UnityEngine.Random.Range(25, 60);
+            int amountToSpawn = UnityEngine.Random.Range(2, 50);
+            float degrees = UnityEngine.Random.Range(0, 360);
+            Vector3 position = new Vector3(3400 * Mathf.Cos(degrees * Mathf.Deg2Rad), 3400 * Mathf.Sin(degrees * Mathf.Deg2Rad), 0);
+            Vector3 DeathPosition = new Vector3(3800 * Mathf.Cos(degrees * Mathf.Deg2Rad), 3800 * Mathf.Sin(degrees * Mathf.Deg2Rad), 0);
+            for (int i = 0; i < amountToSpawn; i++)
+            {
+                AIManager.SpawnAIAndSend(position, AIManager.enemyAIPrefabs[0], -DeathPosition, 30);
+
+            }
         }
+
         for (int i = 0; i < squadrons.Count; i++)
         {
             if (squadrons[i].formation == Formation.V)
