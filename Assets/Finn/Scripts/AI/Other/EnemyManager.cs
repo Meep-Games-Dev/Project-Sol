@@ -14,12 +14,14 @@ public class EnemyManager : MonoBehaviour
     public List<Guid> enemiesNotInSquad = new List<Guid>();
     public List<Squadron> squadrons = new List<Squadron>();
     public List<Resource> resourcesOwned = new List<Resource>();
+    public float nextRandomSpawn;
     public Planet homePlanet;
     public AlliedManager alliedManager;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         alliedManager = FindFirstObjectByType<AlliedManager>();
+        nextRandomSpawn = UnityEngine.Random.Range(30, 120);
     }
 
     public void CreateSquadron(List<Guid> AIs, string name)
@@ -122,7 +124,12 @@ public class EnemyManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if(Time.time >= nextRandomSpawn)
+        {
+            nextRandomSpawn = UnityEngine.Random.Range(30, 120);
+            int amountToSpawn = (int)UnityEngine.Random.Range(2, 40);
+            Vector2 positionToSpawn = new Vector2();
+        }
         for (int i = 0; i < squadrons.Count; i++)
         {
             if (squadrons[i].formation == Formation.V)
