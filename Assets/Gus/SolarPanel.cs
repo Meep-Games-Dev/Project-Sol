@@ -11,7 +11,7 @@ namespace SPanel
     {
         public string type = "static";
         public string id = "S_PS";
-        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f); 
+        public Vector3 setPosition = new Vector3(0f, 6f, 0.0f);
         public GameObject objectToShow; 
         public void show()
         {
@@ -31,7 +31,7 @@ namespace SPanel
         }
         void Awake()
         {
-            transform.position = new Vector3(-6f, 4f, 0f);
+            transform.position = new Vector3(-7f, 4f, 0f);
             hide();
         }
         void Update()

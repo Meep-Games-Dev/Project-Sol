@@ -1,47 +1,13 @@
-/*
 using UnityEngine;
 using System.Collections.Generic;
-using SpaceStation;
-using OtherSpaceStationPeices;
-using RootSpaceStationPeice;
+using StationO;
 
 namespace DrawConnecter
 {
-    public class DrawConnecter : MonoBehaviour
+    public class Draw : MonoBehaviour
     {
-        public string conncecterSidePiece = "./Assets/Gus/ConnecterSidePath.obj"; // Might be useless
-        public string connecterLengthPiece = "./Assets/Gus/ConnecterLengthPath.obj"; 
-        public RootPiece rootPiece = OtherSpaceStationPeices.AttPieces.RootPiece;
-        public OtherSpaceStationPeices.AttPieces.AttachedPiece placedPiece = OtherSpaceStationPeices.AttPieces.AttachedPiece;
-
- // Ex: "[" is the connecter side piece then you have to rotate it 180 degrees to get from the root piece to the other piece that's being connected
-// Ex: the amount of ":" pieces to make the connection length - connecter length piece. 
-//The connecter piece kinda has a end piece if we add like 1 more length then needed so it's hidden in the piece
-//Total example: [::::::::] then rotated to connect root to the attached piece
-
-
-        void DrawConnector()
-        {
-            
-        }
-
-        
-    }
-}
-
-using UnityEngine;
-using System.Collections.Generic;
-using SpaceStation;
-using OtherSpaceStationPeices;
-using RootSpaceStationPeice;
-
-namespace DrawConnecter
-{
-    public class DrawConnecter : MonoBehaviour
-    {
-        public string connecterLengthPiece = "./Assets/Gus/ConnecterLengthPath.obj";
-        public RootPiece rootPiece = OtherSpaceStationPeices.AttPieces.RootPiece;
-        public OtherSpaceStationPeices.AttPieces.AttachedPiece placedPiece = OtherSpaceStationPeices.AttPieces.AttachedPiece;
+        //public string connecterLengthPiece = "./Assets/Gus/ConnecterLengthPath.obj";
+        //public GameObject placedPiece = OtherSpaceStationPeices.AttPieces.AttachedPiece;
 
         public GameObject connectorLengthPrefab; // The ":" filler pieces
         public float pieceLengthUnits = 1.0f;    // How long each ":" piece is in world units
@@ -52,11 +18,11 @@ namespace DrawConnecter
         // The connecter piece has 1 more length than needed so it's hidden inside the attached piece
         // Total example: :::::::::
 
-        void DrawConnector()
-        {
+        public void DrawConnector(Vector3 position)
+        { //Might need to be changed to a DrawConnecter(selectedPiece) because you already know where the root is (0,0)
             // --- 1. Get world positions of the root and attached pieces ---
-            Vector3 startPos = rootPiece.transform.position;
-            Vector3 endPos = placedPiece.transform.position;
+            Vector3 startPos = new Vector3(0.0f, 0.0f, 0.0f);
+            Vector3 endPos = position;
 
             // --- 2. Calculate direction and total distance ---
             Vector3 direction = endPos - startPos;
@@ -64,7 +30,7 @@ namespace DrawConnecter
             Vector3 normalizedDir = direction.normalized;
 
             // --- 3. Figure out how many ":" length pieces are needed (+1 extra so the end is hidden inside the attached piece) ---
-            int lengthPieceCount = Mathf.RoundToInt(totalDistance / pieceLengthUnits) + 1;
+            int lengthPieceCount = Mathf.RoundToInt(direction.magnitude / 1.0f) + 1;
 
             // --- 4. Calculate rotation so pieces face from root to attached ---
             Quaternion connectorRotation = Quaternion.LookRotation(normalizedDir);
@@ -82,7 +48,7 @@ namespace DrawConnecter
         }
 
         // Instantiates a piece, tracks it, and parents it to this GameObject for easy cleanup
-        private void SpawnPiece(GameObject prefab, Vector3 position, Quaternion rotation)
+        public void SpawnPiece(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             if (prefab == null)
             {
@@ -107,4 +73,3 @@ namespace DrawConnecter
         }
     }
 }
-*/
