@@ -168,11 +168,11 @@ public class EnemyManager : MonoBehaviour
             {
                 if (AIManager.AIs[allEnemies[i]].followTarget != Guid.Empty)
                 {
-                    if (Vector2.Distance(AIManager.AIs[AIManager.AIs[allEnemies[i]].followTarget].pos, AIManager.AIs[allEnemies[i]].pos) < 10 && !AIManager.AIs[allEnemies[i]].flybyTarget)
-                    {
-                        AIManager.SendAI(AIManager.AIs[allEnemies[i]], Vector2.Normalize(AIManager.AIs[allEnemies[i]].pos - AIManager.AIs[AIManager.AIs[allEnemies[i]].followTarget].pos) * 4, 0.1f);
-                        AIManager.AIs[allEnemies[i]].flybyTarget = true;
-                    }
+                    //if (Vector2.Distance(AIManager.AIs[AIManager.AIs[allEnemies[i]].followTarget].pos, AIManager.AIs[allEnemies[i]].pos) < 10 && !AIManager.AIs[allEnemies[i]].flybyTarget)
+                    //{
+                    //    AIManager.SendAI(AIManager.AIs[allEnemies[i]], Vector2.Normalize(AIManager.AIs[allEnemies[i]].pos - AIManager.AIs[AIManager.AIs[allEnemies[i]].followTarget].pos) * 4, 0.1f);
+                    //    AIManager.AIs[allEnemies[i]].flybyTarget = true;
+                    //}
                 }
 
             }

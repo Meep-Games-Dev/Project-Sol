@@ -144,7 +144,7 @@ public class CameraMovement : MonoBehaviour
         }
         else
         {
-            rb.AddForce(-transform.position * 500);
+            rb.AddForce(-(Vector2)transform.position * 20);
         }
     }
     private void LateUpdate()

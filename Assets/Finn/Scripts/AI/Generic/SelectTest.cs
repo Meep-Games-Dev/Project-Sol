@@ -256,7 +256,13 @@ public class SelectTest : MonoBehaviour
     void Update()
     {
         bool mouseOverUI = EventSystem.current.IsPointerOverGameObject();
-
+        for (int i = selectedObjs.Count - 1; i >= 0; i--)
+        {
+            if (!AIManager.AIs.ContainsKey(selectedObjs[i]))
+            {
+                selectedObjs.RemoveAt(i);
+            }
+        }
         UpdateAllies();
         UpdateEnemies();
         lineRenderer.ClearLines();

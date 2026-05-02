@@ -2,8 +2,10 @@ using ECS;
 using JetBrains.Annotations;
 using NUnit.Framework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Unity.Burst;
 using Unity.Collections;
@@ -188,8 +190,9 @@ public class RVOManager : MonoBehaviour
 
 
     }
-    public void RemoveAI(Guid AI)
+    public async Awaitable RemoveAI(Guid AI)
     {
+        await Awaitable.NextFrameAsync();
         activeAIs.Remove(AI);
         alliedManager.allAllied.Remove(AI);
         enemyManager.allEnemies.Remove(AI);
@@ -528,7 +531,7 @@ public class RVOManager : MonoBehaviour
         for (int i = 0; i < activeCount; i++)
         {
 
-            if (finished[i] && AIs[activeAIs[i]].followTarget == null)
+            if (finished[i] && AIs[activeAIs[i]].followTarget == Guid.Empty)
             {
                 AIs[activeAIs[i]].targetSet = false;
 
