@@ -104,7 +104,6 @@ public class RayController : MonoBehaviour
                 {
                     Destroy(attachedObject);
                 }
-                RaysToDraw.Add(attachedObject.transform.position); // This is tracking the mouse position, not the piece postition
                 // Second click — drop the object
                 attachedObject.SendMessage("hide", SendMessageOptions.DontRequireReceiver); // hide the piece name when dropped
                 ATpiece.Add(attachedObject);
@@ -125,46 +124,45 @@ public class RayController : MonoBehaviour
         }
     }
     public void DrawConnectors()
-    {
-        foreach (var st in ATpiece)
-        {
-            Debug.Log("Drawing connector for piece at: " + st.transform.position);
-            Vector3 start = st.transform.position; // start is object
-            //DrawConnector(start, finish);
-            DrawConnector(start);
-        }
+    {        
+        DrawConnector(ATpiece);
     }
-    void DrawConnector(Vector3 start)
+    void DrawConnector(List<GameObject> list)
     {
-        Debug.Log("Started drawing connector from: " + start);
-        Vector3 finish = Vector3.zero;
         ClearPieces();
-        float distance = Vector3.Distance(start, finish);
-        Debug.Log("Distance to finish: " + distance);
-        Vector3 direction = finish - start;
+        if(list.Count >= 1)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                var start = list[i].transform.position;
+                Vector3 finish = Vector3.zero;
+                float distance = Vector3.Distance(start, finish);
+                Vector3 direction = finish - start;
 
-        //Quaternion rotation = Quaternion.identity;
-        Quaternion rotation = Quaternion.Euler(direction);
+                //Quaternion rotation = Quaternion.identity;
+                Quaternion rotation = Quaternion.Euler(direction);
 
-        //GameObject instantiatedPiece = Instantiate(myPrefab, position, rotation);
-        /*
-        GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
-        instantiatedPiece.transform.localScale = new Vector3(Xval, 1, 1);
-        GameObject instantiatedPiece2 = Instantiate(prefaab, instantiatedPiece.transform.position, rotation);
-        instantiatedPiece2.transform.position = new Vector3(instantiatedPiece2.transform.position.x, instantiatedPiece2.transform.position.y, instantiatedPiece2.transform.position.z); 
-        //instantiatedPiece2.transform.localScale = new Vector3(1, Yval, 0);
-        GameObject instantiatedPiece3 = Instantiate(myPrefab, instantiatedPiece2.transform.position, rotation);
-        instantiatedPiece3.transform.position = new Vector3(instantiatedPiece3.transform.position.x, instantiatedPiece3.transform.position.y, (-Yval > 0) ? 90 : -90);
-        instantiatedPiece3.transform.localScale = new Vector3(Yval, 1, 1);
-        */
-        rotation = Quaternion.Euler(0, 0, Vector3.SignedAngle(Vector3.right, direction, Vector3.forward));
-        // + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0)
-        GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
-        Connectors.Add(instantiatedPiece);
-        instantiatedPiece.transform.position = (start - finish)/2;
-        instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
+                //GameObject instantiatedPiece = Instantiate(myPrefab, position, rotation);
+                /*
+                GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
+                instantiatedPiece.transform.localScale = new Vector3(Xval, 1, 1);
+                GameObject instantiatedPiece2 = Instantiate(prefaab, instantiatedPiece.transform.position, rotation);
+                instantiatedPiece2.transform.position = new Vector3(instantiatedPiece2.transform.position.x, instantiatedPiece2.transform.position.y, instantiatedPiece2.transform.position.z); 
+                //instantiatedPiece2.transform.localScale = new Vector3(1, Yval, 0);
+                GameObject instantiatedPiece3 = Instantiate(myPrefab, instantiatedPiece2.transform.position, rotation);
+                instantiatedPiece3.transform.position = new Vector3(instantiatedPiece3.transform.position.x, instantiatedPiece3.transform.position.y, (-Yval > 0) ? 90 : -90);
+                instantiatedPiece3.transform.localScale = new Vector3(Yval, 1, 1);
+                */
+                rotation = Quaternion.Euler(0, 0, Vector3.SignedAngle(Vector3.right, direction, Vector3.forward));
+                // + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0)
+                GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
+                Connectors.Add(instantiatedPiece);
+                instantiatedPiece.transform.position = (start - finish)/2;
+                instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
 
-        // draw the connector pieces
+                // draw the connector pieces
+            }
+        }
     }
     void ClearPieces()
     {
