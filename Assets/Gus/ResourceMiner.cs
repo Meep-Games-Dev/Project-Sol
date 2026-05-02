@@ -1,8 +1,8 @@
-using Station;
-using System;
-using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
+using System.Collections.Generic;
+using StationO;
+using System;
+using System.Threading;
 
 namespace ResourceMiner//This entire namespace works for all of the pieces, just change the Activation()
 {
@@ -10,7 +10,7 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
     {
         public int level = 1;
         public int UpCost = 2500;
-        public Dictionary<int, int> time = new Dictionary<int, int>()
+        public Dictionary<int, int> time = new Dictionary<int, int> ()
         {
             {1, 5000},
             {2, 4500},
@@ -27,13 +27,13 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
         public string ID = "F_RM";
         int X = 0;
         int Y = 0;
-        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f);
-        public GameObject objectToShow;
+        public Vector3 setPosition = new Vector3(0f, 6f, 0.0f);
+        public GameObject objectToShow; 
         public void show()
         {
             if (objectToShow != null)
             {
-                objectToShow.GetComponent<RectTransform>().position = setPosition;
+                objectToShow.GetComponent<RectTransform>().position = setPosition; 
                 objectToShow.SetActive(true);
             }
         }
@@ -48,12 +48,12 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
 
         void Awake()
         {
-            transform.position = new Vector3(-6f, -2f, 0f);
+            transform.position = new Vector3(-7f, -2f, 0f);
             hide();
         }
         void Update()
         {
-            if (transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
+            if(transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
             {
                 transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), 0f);
             }
@@ -61,23 +61,24 @@ namespace ResourceMiner//This entire namespace works for all of the pieces, just
         void Activation()//on build.cs or RootSpaceStation.cs call Structual_piece.Activation(); to start the function
         {
             //control for the piece
-            Thread.Sleep(time[level]);
-            SpaceStation.resources[(int)Resources.Ore].amount += 10;
-            SpaceStation.resources[(int)Resources.H2O].amount += 10;
-            SpaceStation.resources[(int)Resources.Carbon].amount += 100;
-            SpaceStation.resources[(int)Resources.Credits].amount += 25;
+            Thread.Sleep(time[level]); 
+            SpaceStation.resources[ResourceType.Ore] += 10;
+            SpaceStation.resources[ResourceType.O2] += 10;
+            SpaceStation.resources[ResourceType.Carbon] += 100;
+            SpaceStation.resources[ResourceType.H2O] += 100;
+            SpaceStation.resources[ResourceType.Credits] += 25;
         }
         void upgrade() // in space station.cs 
         {
             if (time[level] < 7)
             {
-                if (SpaceStation.resources[(int)Resources.Credits].amount >= UpCost)
+                if (SpaceStation.resources[ResourceType.Credits] >= UpCost)
                 {
-                    SpaceStation.resources[(int)Resources.Credits].amount -= UpCost;
+                    SpaceStation.resources[ResourceType.Credits] -= UpCost;
                     level += 1;
                     UpCost += 2500;
                 }
             }
-        }
+        }     
     }
 }

@@ -1,8 +1,8 @@
-using Station;
-using System;
-using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
+using System.Collections.Generic;
+using StationO;
+using System;
+using System.Threading;
 
 namespace FoodModule
 {
@@ -10,7 +10,7 @@ namespace FoodModule
     {
         public int UpCost = 2500;
         public int level = 1;
-        public Dictionary<int, int> time = new Dictionary<int, int>()
+        public Dictionary<int, int> time = new Dictionary<int, int> ()
         {
             {1, 5000},
             {2, 4500},
@@ -22,61 +22,64 @@ namespace FoodModule
         };
         public string type = "functional";
         public string id = "F_FM";
-        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f);
-        public GameObject objectToShow;
+        int X = 0;
+        int Y = 0;
+        int R = 0;
+        public Vector3 setPosition = new Vector3(0f, 6f, 0.0f);
+        public GameObject objectToShow; 
         public void show()
         {
             if (objectToShow != null)
             {
-                objectToShow.GetComponent<RectTransform>().position = setPosition;
+                objectToShow.GetComponent<RectTransform>().position = setPosition; 
                 objectToShow.SetActive(true);
             }
         }
         public void hide()
         {
-
+            
             if (objectToShow != null)
             {
-                objectToShow.GetComponent<RectTransform>().position = setPosition;
+                objectToShow.GetComponent<RectTransform>().position = setPosition; 
                 objectToShow.SetActive(false);
             }
         }
 
         void Awake()
         {
-            transform.position = new Vector3(-6f, 2f, 0f);
+            transform.position = new Vector3(-7f, 2f, 0f);
             hide();
         }
-        // Update is called once per frame   
+    // Update is called once per frame   
         void Update()
         {
-            if (transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
+            if(transform.position.x != Math.Round(transform.position.x) || transform.position.y != Math.Round(transform.position.y))
             {
                 transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), 0f);
             }
-        }
-        void Activation()//on build.cs or RootSpaceStation.cs call Structual_piece.Activation(); to start the function
+        }   
+        void Activation(Station station)//on build.cs or RootSpaceStation.cs call Structual_piece.Activation(); to start the function
         {
             //control for the piece
             // The level influences the number of resources needed to refine into 50 food
-            if ((SpaceStation.resources[(int)Resources.Carbon].amount >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level))) && (SpaceStation.resources[(int)Resources.H2O].amount >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level)))) // refines Carbon and H2O into Food
-            {
-                SpaceStation.resources[(int)Resources.Carbon].amount -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
-                SpaceStation.resources[(int)Resources.H2O].amount -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
-                SpaceStation.resources[(int)Resources.Food].amount += 50;
+            if ((station.resources[ResourceType.Carbon] >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level))) && (station.resources[ResourceType.H2O] >= 1 + Mathf.Round(100 * Mathf.Pow(1 + 0.05f, 7 - level)))) // refines Carbon and H2O into Food
+            { 
+                station.resources[ResourceType.Carbon] -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
+                station.resources[ResourceType.H2O] -= Mathf.RoundToInt(100 * Mathf.Pow(1 + 0.05f, 7 - level));
+                station.resources[ResourceType.Food] += 50;
             }
         }
-        void upgrade() // in space station.cs 
+        void upgrade(Station station) // in space station.cs 
         {
             if (time[level] < 7)
             {
-                if (SpaceStation.resources[(int)Resources.Credits].amount >= UpCost)
+                if (station.resources[ResourceType.Credits] >= UpCost)
                 {
-                    SpaceStation.resources[(int)Resources.Credits].amount -= UpCost;
+                    station.resources[ResourceType.Credits] -= UpCost;
                     level += 1;
                     UpCost += 2500;
                 }
             }
-        }
+        }       
     }
 }

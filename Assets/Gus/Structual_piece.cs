@@ -11,7 +11,7 @@ namespace Structual_piece //The piece is a 90 degree connector - block straight-
     {
         public string type = "static"; // no function 
         public string id = "S_SP";
-        public Vector3 setPosition = new Vector3(130f, 182f, 0.0f); 
+        public Vector3 setPosition = new Vector3(0f, 6f, 0.0f);
         public GameObject objectToShow; 
         public void show()
         {
@@ -32,7 +32,7 @@ namespace Structual_piece //The piece is a 90 degree connector - block straight-
         
         void Awake()
         {
-            transform.position = new Vector3(-6f, -4f, 0f);
+            transform.position = new Vector3(-7f, -4f, 0f);
             hide();
         }
         void Update() // the rounding for the piece is only activated when the piece is placed, not when it is being dragged
