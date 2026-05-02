@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Savee;
 
 public class RayController : MonoBehaviour
 {
@@ -16,12 +17,12 @@ public class RayController : MonoBehaviour
     public InputAction rightMouse;
     public InputAction kill;
     [SerializeField] private GameObject myPrefab;
-    public List<Vector3> RaysToDraw = new List<Vector3>();
     float OX = 0f;
     float OY = 0f;
     int clones = 0;
     public List<GameObject> ATpiece = new List<GameObject>();
     public List<GameObject> Connectors = new List<GameObject>();
+    public Dictionary<Vector3, GameObject> pieces = new Dictionary<Vector3, GameObject>();
 
     public void OnEnable()
     {
@@ -90,6 +91,7 @@ public class RayController : MonoBehaviour
             }
             if (kill.WasPressedThisFrame())
             {
+                ATpiece.Remove(attachedObject);
                 Destroy(attachedObject);
                 attachedObject = null;
             }
@@ -100,8 +102,9 @@ public class RayController : MonoBehaviour
         {
             if (attachedObject != null)
             {
-                if(attachedObject.transform.position.x <= -5) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
+                if(attachedObject.transform.position.x <= -7) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
                 {
+                    ATpiece.Remove(attachedObject);
                     Destroy(attachedObject);
                 }
                 // Second click — drop the object
@@ -124,7 +127,7 @@ public class RayController : MonoBehaviour
         }
     }
     public void DrawConnectors()
-    {        
+    {     
         DrawConnector(ATpiece);
     }
     void DrawConnector(List<GameObject> list)
@@ -159,7 +162,7 @@ public class RayController : MonoBehaviour
                 Connectors.Add(instantiatedPiece);
                 instantiatedPiece.transform.position = (start - finish)/2;
                 instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
-
+                Debug.Log("Drew connector at: " + instantiatedPiece.transform.position);
                 // draw the connector pieces
             }
         }
