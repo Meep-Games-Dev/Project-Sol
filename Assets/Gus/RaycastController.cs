@@ -16,12 +16,10 @@ public class RayController : MonoBehaviour
     public InputAction rightMouse;
     public InputAction kill;
     [SerializeField] private GameObject myPrefab;
-    [SerializeField] private GameObject prefaab;
-    public Dictionary<GameObject, (Vector3, Vector3)> RaysToDraw = new Dictionary<GameObject, (Vector3, Vector3)>();
+    public List<Vector3> RaysToDraw = new List<Vector3>();
     float OX = 0f;
     float OY = 0f;
     int clones = 0;
-    float offset = 0.5f;
     public List<GameObject> ATpiece = new List<GameObject>();
     public List<GameObject> Connectors = new List<GameObject>();
 
@@ -59,29 +57,28 @@ public class RayController : MonoBehaviour
         Vector3 screenPointWithDepth = new Vector3(mouseScreenPos.x, mouseScreenPos.y,
             Mathf.Abs(Camera.main.transform.position.z));
         Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(screenPointWithDepth);
-        Debug.Log(mouseWorldPos);
-
         // Draw ray continuously while something is attached
         if (attachedObject != null)
         {
             Vector2 start = new Vector2(attachedObject.transform.position.x, attachedObject.transform.position.y);
             Vector2 finish = Vector2.zero;
             //Vector2 direction = finish - start;
-            RaysToDraw[attachedObject] = (start, finish);
             attachedObject.SendMessage("show", SendMessageOptions.DontRequireReceiver); // make it so the sprite displays the piece name 
             // Move attached object with mouse
-            //attachedObject.transform.position = (Vector2)mouseWorldPos;
-            /*
-            if(attachedObject.transform.root == null)
+            //attachedObject.transform.position = (Vector2)mouseWorldPos
+
+            if(attachedObject.tag != "clone")
             {
-                Instantiate(attachedObject, mouseWorldPos, Quaternion.identity); // if the piece is a parent, make a child and move that
-                attachedObject.GetComponentInChildren<Transform>().position = mouseWorldPos;
+                GameObject clone = Instantiate(attachedObject, mouseWorldPos, Quaternion.identity); // if the piece is a parent, make a child and move that
+                clone.tag = "clone";
+                attachedObject = clone;
+                attachedObject.transform.position = mouseWorldPos;
             }
             else
             {
-                attachedObject.transform.position = (Vector3)mouseWorldPos;
+                attachedObject.transform.position = (Vector2)mouseWorldPos;
             }
-            */
+            
 
             attachedObject.transform.position = (Vector2)mouseWorldPos;
 
@@ -103,9 +100,14 @@ public class RayController : MonoBehaviour
         {
             if (attachedObject != null)
             {
+                if(attachedObject.transform.position.x <= -5) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
+                {
+                    Destroy(attachedObject);
+                }
+                RaysToDraw.Add(attachedObject.transform.position); // This is tracking the mouse position, not the piece postition
                 // Second click — drop the object
                 attachedObject.SendMessage("hide", SendMessageOptions.DontRequireReceiver); // hide the piece name when dropped
-                SpaceStation.ATpiece.Add(attachedObject);
+                ATpiece.Add(attachedObject);
                 attachedObject = null;
 
             }
@@ -124,33 +126,25 @@ public class RayController : MonoBehaviour
     }
     public void DrawConnectors()
     {
-        foreach (var kvp in RaysToDraw)
+        foreach (var st in ATpiece)
         {
-            Vector3 start = kvp.Value.Item1; // start is object
-            Vector3 finish = kvp.Value.Item2; // end is 0,0,0
+            Debug.Log("Drawing connector for piece at: " + st.transform.position);
+            Vector3 start = st.transform.position; // start is object
             //DrawConnector(start, finish);
-            DrawConnector(start, finish);
+            DrawConnector(start);
         }
     }
-    void DrawConnector(Vector3 start, Vector3 finish)
+    void DrawConnector(Vector3 start)
     {
+        Debug.Log("Started drawing connector from: " + start);
+        Vector3 finish = Vector3.zero;
         ClearPieces();
         float distance = Vector3.Distance(start, finish);
+        Debug.Log("Distance to finish: " + distance);
         Vector3 direction = finish - start;
-        float Xval = -start.x;
-        float Yval = -start.y;
-
-        if (Xval == 0)
-        {
-            Xval = 1f; // prevent division by zero
-        }
-        if (Yval == 0)
-        {
-            Yval = 1f; // prevent division by zero
-        }
 
         //Quaternion rotation = Quaternion.identity;
-        Quaternion rotation = Quaternion.Euler(direction); // just stays at a straight line
+        Quaternion rotation = Quaternion.Euler(direction);
 
         //GameObject instantiatedPiece = Instantiate(myPrefab, position, rotation);
         /*
@@ -163,12 +157,12 @@ public class RayController : MonoBehaviour
         instantiatedPiece3.transform.position = new Vector3(instantiatedPiece3.transform.position.x, instantiatedPiece3.transform.position.y, (-Yval > 0) ? 90 : -90);
         instantiatedPiece3.transform.localScale = new Vector3(Yval, 1, 1);
         */
-        GameObject instantiatedPiece = Instantiate(myPrefab, start + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0));
+        rotation = Quaternion.Euler(0, 0, Vector3.SignedAngle(Vector3.right, direction, Vector3.forward));
+        // + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0)
+        GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
         Connectors.Add(instantiatedPiece);
+        instantiatedPiece.transform.position = (start - finish)/2;
         instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
-
-
-
 
         // draw the connector pieces
     }
