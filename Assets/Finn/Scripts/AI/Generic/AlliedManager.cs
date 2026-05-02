@@ -1,5 +1,6 @@
 using ECS;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
@@ -13,7 +14,7 @@ public class AlliedManager : MonoBehaviour
 {
     public RVOManager AIManager;
     public SolarSystemManager solarSystemManager;
-    public List<int> allAllied = new List<int>();
+    public List<Guid> allAllied = new List<Guid>();
     public List<Squadron> squadrons = new List<Squadron>();
     public List<Resource> resourcesOwned = new List<Resource>();
     public UIManager uiManager;
@@ -32,12 +33,10 @@ public class AlliedManager : MonoBehaviour
         }
     }
 
-    public void CreateSquadron(List<int> AIs, string name)
+    public void CreateSquadron(List<Guid> AIs, string name)
     {
-        Debug.Log(AIs.Count);
-        List<int> AIList = new List<int>(AIs);
+        List<Guid> AIList = new List<Guid>(AIs);
         AIList.RemoveAt(0);
-        Debug.Log(AIs.Count + "/" + AIList.Count);
         if (name != null)
         {
             squadrons.Add(new Squadron { AIidx = AIList, name = name, leadAI = AIs[0] });
@@ -46,15 +45,15 @@ public class AlliedManager : MonoBehaviour
         {
             squadrons.Add(new Squadron { AIidx = AIList, leadAI = AIs[0] });
         }
-        AIManager.AIs[allAllied[AIs[0]]].squadron = squadrons[squadrons.Count - 1];
-        Debug.Log("Setting AI " + AIManager.AIs[allAllied[AIs[0]]].gameObjectRef.name + " as leader of squad");
+        AIManager.AIs[allAllied.Find(x => x == AIs[0])].squadron = squadrons[squadrons.Count - 1];
+        // Debug.Log("Setting AI " + AIManager.AIs[allAllied.Find(x => x == AIs[0])].gameObjectRef.name + " as leader of squad");
         for (int i = 0; i < AIList.Count; i++)
         {
-            Debug.Log("Adding AI " + AIManager.AIs[allAllied[AIList[i]]].gameObjectRef.name + " to squad");
-            AIManager.AIs[allAllied[AIList[i]]].squadron = squadrons[squadrons.Count - 1];
+            //Debug.Log("Adding AI " + AIManager.AIs[allAllied.Find(x => x == AIList[i])].gameObjectRef.name + " to squad");
+            AIManager.AIs[allAllied.Find(x => x == AIList[i])].squadron = squadrons[squadrons.Count - 1];
         }
     }
-    public void RemoveFromSquadron(int AI, Squadron squadron)
+    public void RemoveFromSquadron(Guid AI, Squadron squadron)
     {
         int idx = squadron.AIidx.IndexOf(AI);
         if (idx != -1)
@@ -175,21 +174,6 @@ public class AlliedManager : MonoBehaviour
         squadrons.RemoveAll(x => x.AIidx.Count == 0);
         uiManager.UpdateSquadronDropdown(squadrons);
         uiManager.UpdateResourceDropdown(resourcesOwned);
-        NativeArray<RaycastCommand> commands = new NativeArray<RaycastCommand>(allAllied.Count, Allocator.TempJob);
-        NativeArray<RaycastHit> results = new NativeArray<RaycastHit>(allAllied.Count, Allocator.TempJob);
-        for (int i = 0; i < allAllied.Count; i++)
-        {
-            commands[i] = new RaycastCommand(AIManager.AIs[allAllied[i]].pos, AIManager.AIs[allAllied[i]].gameObjectRef.transform.rotation.eulerAngles, QueryParameters.Default);
-        }
-        JobHandle handle = RaycastCommand.ScheduleBatch(commands, results, 1, default);
-        handle.Complete();
-        for (int i = 0; i < results.Length; i++)
-        {
-            if (results[i].collider != null && results[i].collider.gameObject.GetComponent<Inspectable>().type == InspectableTypes.Enemy)
-            {
-                //Shoot
-            }
-        }
 
 
     }

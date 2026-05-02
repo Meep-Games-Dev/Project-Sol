@@ -25,9 +25,32 @@ public class RVOobstacle
     public float2 previousPos;
     public GameObject objRef;
 }
-public static class RandNames
+public static class RandUtils
 {
+    public static List<float> GetBufferedRandoms(int count, float min, float max, float minDistance)
+    {
+        List<float> results = new List<float>();
+        int safetyNet = 0;
 
+        while (results.Count < count && safetyNet < 1000)
+        {
+            float candidate = UnityEngine.Random.Range(min, max);
+            bool isValid = true;
+
+            foreach (float val in results)
+            {
+                if (Mathf.Abs(candidate - val) < minDistance)
+                {
+                    isValid = false;
+                    break;
+                }
+            }
+
+            if (isValid) results.Add(candidate);
+            safetyNet++;
+        }
+        return results;
+    }
     public static string RandomGreekLetter()
     {
         System.Random rnd = new System.Random();
@@ -114,9 +137,9 @@ public class Squadron
     public Formation formation;
     public Vector2 target;
     public bool targetSet;
-    public List<int> AIidx;
+    public List<Guid> AIidx;
     public RVOAI enemy;
-    public int leadAI;
+    public Guid leadAI;
 }
 public class FormationData
 {
@@ -153,6 +176,7 @@ public struct WeaponData
     public float range;
     public float3 positionOffset;
     public float bulletSpeed;
+    public float radius;
     [HideInInspector]
     public float nextFireTime;
 }
@@ -161,13 +185,15 @@ public struct RVOAIData : IComponentData
 {
     public float maxSpeed;
     public float currentSpeed;
-    public int health;
+    public float health;
     public FixedList512Bytes<WeaponData> weapons;
     public ShipType type;
     public Faction faction;
+    public float radius;
 }
 public class RVOAI
 {
+    public Guid id;
     public RVOAIData data;
     public Entity entity;
     public Vector2 pos;
@@ -176,7 +202,7 @@ public class RVOAI
     public Vector2 visualTarget;
     public Vector2 vel;
     public float rad;
-    public RVOAI followTarget;
+    public Guid followTarget;
     public bool flybyTarget;
     public bool attackingTarget;
     public bool targetSet;
@@ -184,6 +210,7 @@ public class RVOAI
     public Squadron squadron;
     public int nextShoot;
     public int nextShootIdx;
+    public AILifeCycle lifeCycle;
 }
 [System.Serializable]
 public class SaveableAIGroup
@@ -200,12 +227,13 @@ public class SaveableRVOAI
     public Vector2 target;
     public Vector2 vel;
     public float rad;
-    public int followTargetIdx;
+    public Guid followTargetId;
     public bool enemyTarget;
     public bool targetSet;
     public float distanceToKeep;
     public Quaternion rotation;
     public Squadron squadron;
+    public Guid id;
 }
 [System.Serializable]
 public class SaveablePlanet
@@ -292,6 +320,7 @@ public enum Faction
 {
     Freindly,
     Enemy,
+    Neutral,
     None
 }
 public class PathFinderAI

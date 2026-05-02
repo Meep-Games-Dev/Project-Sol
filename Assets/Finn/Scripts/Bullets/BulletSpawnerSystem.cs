@@ -28,7 +28,8 @@ namespace ECS
                     moveSpeed = tag.speed,
                     maxLifetime = tag.lifetime,
                     damage = tag.damage,
-                    belongingTo = tag.belongingTo
+                    belongingTo = tag.belongingTo,
+                    radius = tag.radius,
                 });
                 ecb.DestroyEntity(entity);
             }

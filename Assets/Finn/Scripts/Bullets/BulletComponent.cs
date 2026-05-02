@@ -20,6 +20,7 @@ namespace ECS
         public float3 dir;
         public float lifetime;
         public float damage;
+        public float radius;
         public Faction belongingTo;
     }
     public struct Damageable : IComponentData
@@ -27,14 +28,6 @@ namespace ECS
         public float health;
         public float radius;
         public Faction belongingTo;
-    }
-    public struct ECSFaction : IComponentData
-    {
-        public Faction faction;
-    }
-    public struct AIData : IComponentData
-    {
-        public RVOAIData data;
     }
 }
 

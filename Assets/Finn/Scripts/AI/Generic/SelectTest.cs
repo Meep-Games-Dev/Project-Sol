@@ -1,25 +1,30 @@
 using JetBrains.Annotations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Entities.UniversalDelegates;
+using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using static Unity.Burst.Intrinsics.X86;
+using static UnityEngine.GraphicsBuffer;
+using static UnityEngine.Rendering.DebugUI;
 public class SelectTest : MonoBehaviour
 {
     public PlayerInput PlayerInput;
     private InputAction mousePosInput;
     private InputAction mouseLeftClick;
     private InputAction mouseRightClick;
-    public List<RVOAI> selectableObjs = new List<RVOAI>();
-    public List<RVOAI> selectedObjs = new List<RVOAI>();
+    public List<Guid> selectableObjs = new List<Guid>();
+    public List<Guid> selectedObjs = new List<Guid>();
     public List<GameObject> selectableGameObjs = new List<GameObject>();
 
     public List<Planet> selectablePlnts = new List<Planet>();
     public List<Planet> selectedPlnts = new List<Planet>();
     public List<GameObject> selectablePlntGmObjs = new List<GameObject>();
-    public List<RVOAI> enemies = new List<RVOAI>();
+    public List<Guid> enemies = new List<Guid>();
     Rect selectionRect = new Rect();
     private Vector2 selectionStartPos = new Vector2();
     public Texture2D selectionTexture;
@@ -79,7 +84,7 @@ public class SelectTest : MonoBehaviour
         }
         for (int i = 0; i < selectedObjs.Count; i++)
         {
-            Renderer selectedRend = selectedObjs[i].gameObjectRef.GetComponentInChildren<Renderer>();
+            MeshRenderer selectedRend = AIManager.AIs[selectedObjs[i]].gameObjectRef.GetComponentInChildren<MeshRenderer>();
             if (selectedRend != null)
             {
                 float left = Camera.main.WorldToScreenPoint(selectedRend.bounds.center - new Vector3(selectedRend.bounds.extents.x, 0, 0)).x;
@@ -98,7 +103,7 @@ public class SelectTest : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"Object {selectedObjs[i].gameObjectRef.name} does not have a renderer, cannot get bounds of selected object");
+                Debug.LogWarning($"Object {AIManager.AIs[selectedObjs[i]].gameObjectRef.name} does not have a renderer, cannot get bounds of selected object");
                 continue;
             }
         }
@@ -106,20 +111,20 @@ public class SelectTest : MonoBehaviour
     }
     public void CreateSquad(string name)
     {
-        List<int> AIsToAddToSquad = new List<int>();
+        List<Guid> AIsToAddToSquad = new List<Guid>();
         for (int i = 0; i < selectedObjs.Count; i++)
         {
-            AIsToAddToSquad.Add(AIManager.AIs.IndexOf(selectedObjs[i]));
+            AIsToAddToSquad.Add(selectedObjs[i]);
         }
         alliedManager.CreateSquadron(AIsToAddToSquad, name);
         SelectedObjectsDirty();
     }
     public void DeleteSquadSingle()
     {
-        int ai = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj.gameObject);
-        if (ai != -1)
+        Guid key = AIManager.AIs.FirstOrDefault(x => x.Value.gameObjectRef == currentInspectedObj.gameObject).Key;
+        if (key != Guid.Empty)
         {
-            alliedManager.RemoveFromSquadron(ai, AIManager.AIs[ai].squadron);
+            alliedManager.RemoveFromSquadron(key, AIManager.AIs[key].squadron);
         }
     }
     public void DeleteSquad()
@@ -132,18 +137,8 @@ public class SelectTest : MonoBehaviour
     {
 
         DeleteSquad();
-        CreateSquad(RandNames.RandomGreekLetter());
+        CreateSquad(RandUtils.RandomGreekLetter());
         SelectedObjectsDirty();
-    }
-    public void RemoveFromSquad()
-    {
-        int idx = AIManager.AIs.FindIndex(x => x.gameObjectRef == currentInspectedObj.gameObject);
-        if (idx != -1)
-        {
-
-
-            alliedManager.RemoveFromSquadron(idx, AIManager.AIs[idx].squadron);
-        }
     }
     public void ChangeSquadronFormation()
     {
@@ -180,14 +175,14 @@ public class SelectTest : MonoBehaviour
             inspector.tracking = null;
             return;
         }
-        Squadron currentSquadron = AIManager.AIs.Find(x => x == selectedObjs[0]).squadron;
+        Squadron currentSquadron = AIManager.AIs[selectedObjs[0]].squadron;
         bool anySquad = false;
         for (int i = 1; i < selectedObjs.Count; i++)
         {
             if (currentSquadron != null)
             {
                 anySquad = true;
-                if (AIManager.AIs.Find(x => x == selectedObjs[i]).squadron != currentSquadron)
+                if (AIManager.AIs[selectedObjs[i]].squadron != currentSquadron)
                 {
                     currentSquadron = null;
                 }
@@ -195,7 +190,7 @@ public class SelectTest : MonoBehaviour
             else
             {
 
-                currentSquadron = AIManager.AIs.Find(x => x == selectedObjs[i]).squadron;
+                currentSquadron = AIManager.AIs[selectedObjs[i]].squadron;
                 if (currentSquadron != null)
                 {
                     anySquad = true;
@@ -244,7 +239,7 @@ public class SelectTest : MonoBehaviour
         enemies.Clear();
         for (int i = 0; i < enemyManager.allEnemies.Count; i++)
         {
-            enemies.Add(AIManager.AIs[enemyManager.allEnemies[i]]);
+            enemies.Add(enemyManager.allEnemies[i]);
         }
     }
     public void UpdateAllies()
@@ -253,7 +248,7 @@ public class SelectTest : MonoBehaviour
         selectableGameObjs.Clear();
         for (int i = 0; i < alliedManager.allAllied.Count; i++)
         {
-            selectableObjs.Add(AIManager.AIs[alliedManager.allAllied[i]]);
+            selectableObjs.Add(alliedManager.allAllied[i]);
             selectableGameObjs.Add(AIManager.AIs[alliedManager.allAllied[i]].gameObjectRef);
         }
     }
@@ -303,7 +298,7 @@ public class SelectTest : MonoBehaviour
             Vector2 sum = Vector2.zero;
             for (int i = 0; i < selectedObjs.Count; i++)
             {
-                sum += selectedObjs[i].pos;
+                sum += AIManager.AIs[selectedObjs[i]].pos;
             }
             avg = sum / selectedObjs.Count;
 
@@ -361,13 +356,13 @@ public class SelectTest : MonoBehaviour
                     {
                         //Debug.Log("selected " + currentInspectedObj.name + " in squadron " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name);
                         List<DynamicButton> buttons = new List<DynamicButton>();
-
-                        if (AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron != null)
+                        Guid key = AIManager.AIs.FirstOrDefault(x => x.Value.gameObjectRef == currentInspectedObj.gameObject).Key;
+                        if (key != Guid.Empty)
                         {
                             buttons.Add(new DynamicButton
                             {
-                                function = RemoveFromSquad,
-                                text = "Remove from " + AIManager.AIs.Find(x => x.gameObjectRef == currentInspectedObj.gameObject).squadron.name
+                                function = DeleteSquadSingle,
+                                text = "Remove from " + AIManager.AIs[key].squadron.name
                             });
                             uiManager.UpdateButtonLayout(buttons);
                         }
@@ -421,9 +416,9 @@ public class SelectTest : MonoBehaviour
             RVOAI attacking = null;
             for (int i = 0; i < enemies.Count; i++)
             {
-                if (Vector2.Distance(mouseWorldPos, enemies[i].pos) < 2)
+                if (Vector2.Distance(mouseWorldPos, AIManager.AIs[enemies[i]].pos) < 2)
                 {
-                    attacking = enemies[i];
+                    attacking = AIManager.AIs[enemies[i]];
                     break;
                 }
             }
@@ -437,7 +432,7 @@ public class SelectTest : MonoBehaviour
                 {
                     for (int i = 0; i < selectedObjs.Count; i++)
                     {
-                        AIManager.AttackAI(selectedObjs[i], attacking, true);
+                        AIManager.AttackAI(AIManager.AIs[selectedObjs[i]], attacking, true);
                     }
                 }
             }
@@ -451,7 +446,7 @@ public class SelectTest : MonoBehaviour
                 {
                     for (int i = 0; i < selectedObjs.Count; i++)
                     {
-                        AIManager.SendAI(selectedObjs[i], mouseWorldPos, selectedObjs.Count * 0.6f);
+                        AIManager.SendAI(AIManager.AIs[selectedObjs[i]], mouseWorldPos, selectedObjs.Count * 0.6f);
                     }
                 }
             }
@@ -473,13 +468,13 @@ public class SelectTest : MonoBehaviour
                 );
                 for (int i = 0; i < selectableObjs.Count; i++)
                 {
-                    if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
+                    if (!selectedObjs.Contains(selectableObjs[i]) && selectionRect.Contains((Vector2)AIManager.AIs[selectableObjs[i]].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Add(selectableObjs[i]);
                         SelectedObjectsDirty();
 
                     }
-                    else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains((Vector2)selectableObjs[i].gameObjectRef.transform.position, true))
+                    else if (selectedObjs.Contains(selectableObjs[i]) && !selectionRect.Contains((Vector2)AIManager.AIs[selectableObjs[i]].gameObjectRef.transform.position, true))
                     {
                         selectedObjs.Remove(selectableObjs[i]);
                         SelectedObjectsDirty();
@@ -490,11 +485,11 @@ public class SelectTest : MonoBehaviour
         }
         for (int i = 0; i < selectedObjs.Count; i++)
         {
-            if (selectedObjs[i].targetSet)
+            if (AIManager.AIs[selectedObjs[i]].targetSet)
             {
-                if (selectedObjs[i].followTarget != null)
+                if (AIManager.AIs[selectedObjs[i]].followTarget != Guid.Empty)
                 {
-                    Vector3 screenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position);
+                    Vector3 screenPos = Camera.main.WorldToScreenPoint(AIManager.AIs[selectedObjs[i]].gameObjectRef.transform.position);
 
                     RectTransform rectTransform = lineRenderer.GetComponent<RectTransform>();
                     Vector2 localPos;
@@ -506,7 +501,7 @@ public class SelectTest : MonoBehaviour
                         out localPos
                     );
 
-                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].followTarget.gameObjectRef.transform.position);
+                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(AIManager.AIs[AIManager.AIs[selectedObjs[i]].followTarget].gameObjectRef.transform.position);
 
                     Vector2 targetLocalPos;
 
@@ -528,7 +523,7 @@ public class SelectTest : MonoBehaviour
                 }
                 else
                 {
-                    Vector3 screenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].gameObjectRef.transform.position);
+                    Vector3 screenPos = Camera.main.WorldToScreenPoint(AIManager.AIs[selectedObjs[i]].gameObjectRef.transform.position);
 
                     RectTransform rectTransform = lineRenderer.GetComponent<RectTransform>();
                     Vector2 localPos;
@@ -540,7 +535,7 @@ public class SelectTest : MonoBehaviour
                         out localPos
                     );
 
-                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(selectedObjs[i].visualTarget);
+                    Vector3 targetScreenPos = Camera.main.WorldToScreenPoint(AIManager.AIs[selectedObjs[i]].visualTarget);
 
                     Vector2 targetLocalPos;
 

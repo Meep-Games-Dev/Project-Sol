@@ -23,7 +23,7 @@ public class Planet : MonoBehaviour
     public Color planetColor;
     public Color atmosphereColor;
     public Color cloudColor;
-
+    public SphereCollider colliderP;
     public float min;
     public float max;
     public Vector2 surfaceOffset;
@@ -39,7 +39,7 @@ public class Planet : MonoBehaviour
 
         rotationalSpeed = UnityEngine.Random.Range(0.01f, 0.2f);
         localRotationalSpeed = UnityEngine.Random.Range(0.1f, 0.5f);
-
+        colliderP = GetComponentInChildren<SphereCollider>();
         string part1 = prefixes[rnd.Next(prefixes.Length)];
 
         string part2 = middles[rnd.Next(middles.Length)];
@@ -48,7 +48,7 @@ public class Planet : MonoBehaviour
 
         if (rnd.Next(100) < 30)
         {
-            planetName += " " + RandNames.RandomGreekLetter();
+            planetName += " " + RandUtils.RandomGreekLetter();
         }
 
         Array possibleResources = Enum.GetValues(typeof(Resources));

@@ -90,7 +90,7 @@ public class SolarSystemManager : MonoBehaviour
         {
             alliedHome = Random.Range(0, planets);
         }
-
+        List<float> distancesFromSun = RandUtils.GetBufferedRandoms(planets, 500, size, 80);
         for (int i = 0; i < planets; i++)
         {
 
@@ -98,7 +98,7 @@ public class SolarSystemManager : MonoBehaviour
             Color atmosphereColor = Random.ColorHSV();
             Color cloudColor = Random.ColorHSV();
 
-            float distanceFromSun = Random.Range(500, size);
+            float distanceFromSun = distancesFromSun[i];
             float planetSize = Random.Range(2f, 10f);
 
             float degrees = Random.Range(0, 360);
@@ -168,7 +168,7 @@ public class SolarSystemManager : MonoBehaviour
             {
                 alliedManager.homePlanet = planet;
                 planet.homePlanetOf = Faction.Freindly;
-                camMove.GetComponent<Rigidbody>().MovePosition(new Vector3(planet.gameObject.transform.position.x, planet.gameObject.transform.position.y, planet.gameObject.transform.position.z - 30));
+                camMove.GetComponent<Rigidbody>().MovePosition(new Vector3(planet.gameObject.transform.position.x, planet.gameObject.transform.position.y, planet.gameObject.transform.position.z - 100));
             }
             else
             {

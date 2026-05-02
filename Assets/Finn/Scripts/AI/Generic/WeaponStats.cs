@@ -6,4 +6,5 @@ public class WeaponStats : MonoBehaviour
     public float damage;
     public float range;
     public float speed;
+    public float radius;
 }

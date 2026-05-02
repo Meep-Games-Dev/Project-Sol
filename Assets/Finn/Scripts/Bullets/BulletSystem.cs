@@ -18,7 +18,7 @@ public partial struct BulletSystem : ISystem
         foreach (var (transform, bullet, entity) in SystemAPI.Query<RefRW<LocalTransform>, RefRW<BulletComponent>>().WithEntityAccess())
         {
             transform.ValueRW.Position += bullet.ValueRO.moveDir * bullet.ValueRO.moveSpeed * SystemAPI.Time.DeltaTime;
-            transform.ValueRW.Rotation = quaternion.LookRotationSafe(bullet.ValueRO.moveDir, transform.ValueRO.Right());
+            transform.ValueRW.Rotation = quaternion.LookRotationSafe(bullet.ValueRO.moveDir, math.up());
             bullet.ValueRW.lifetime += SystemAPI.Time.DeltaTime;
 
             if (bullet.ValueRW.lifetime > bullet.ValueRW.maxLifetime)

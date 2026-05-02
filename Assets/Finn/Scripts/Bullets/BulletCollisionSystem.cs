@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 public partial struct BulletCollisionSystem : ISystem
 {
@@ -20,9 +21,9 @@ public partial struct BulletCollisionSystem : ISystem
             float bulletRadius = bullet.ValueRO.radius;
 
             foreach (var (targetTransform, target, targetEntity) in
-                     SystemAPI.Query<RefRW<LocalTransform>, RefRW<Damageable>>().WithEntityAccess())
+                     SystemAPI.Query<RefRW<LocalTransform>, RefRW<RVOAIData>>().WithEntityAccess())
             {
-                if (destroyedEntities.Contains(targetEntity) || destroyedEntities.Contains(bulletEntity))
+                if (destroyedEntities.Contains(targetEntity) || destroyedEntities.Contains(bulletEntity) || bullet.ValueRO.belongingTo == target.ValueRO.faction)
                 {
                     continue;
                 }
@@ -36,6 +37,7 @@ public partial struct BulletCollisionSystem : ISystem
                     destroyedEntities.Add(bulletEntity);
                     if (target.ValueRW.health <= 0)
                     {
+
                         ecb.DestroyEntity(targetEntity);
                         destroyedEntities.Add(targetEntity);
                     }

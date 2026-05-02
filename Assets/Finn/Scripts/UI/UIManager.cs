@@ -38,7 +38,7 @@ public class UIManager : MonoBehaviour
     public void RequestInput()
     {
         nameField.SetActive(true);
-        nameFieldInput.text = RandNames.RandomGreekLetter();
+        nameFieldInput.text = RandUtils.RandomGreekLetter();
     }
     public void FinishInput()
     {
@@ -76,6 +76,10 @@ public class UIManager : MonoBehaviour
         {
             text = "Squadrons"
         });
+        options.Add(new TMP_Dropdown.OptionData
+        {
+            text = "Select All"
+        });
         for (int i = 0; i < squadrons.Count; i++)
         {
             options.Add(new TMP_Dropdown.OptionData
@@ -89,12 +93,24 @@ public class UIManager : MonoBehaviour
     {
         int selectedVal = squadronDropdown.value;
         if (selectedVal == 0) return;
+        if (selectedVal == 1)
+        {
+            selector.selectedObjs.Clear();
+            for (int i = 0; i < selector.selectableObjs.Count; i++)
+            {
+                selector.selectedObjs.Add(selector.selectableObjs[i]);
+            }
+            selector.SelectedObjectsDirty();
+            squadronDropdown.value = 0;
+            return;
+        }
+
         Squadron selectedSquadron = alliedManager.squadrons[selectedVal - 1];
         selector.selectedObjs.Clear();
-        selector.selectedObjs.Add(AIManager.AIs[selectedSquadron.leadAI]);
+        selector.selectedObjs.Add(selectedSquadron.leadAI);
         for (int i = 0; i < selectedSquadron.AIidx.Count; i++)
         {
-            selector.selectedObjs.Add(AIManager.AIs[selectedSquadron.AIidx[i]]);
+            selector.selectedObjs.Add(selectedSquadron.AIidx[i]);
         }
         selector.SelectedObjectsDirty();
         squadronDropdown.value = 0;

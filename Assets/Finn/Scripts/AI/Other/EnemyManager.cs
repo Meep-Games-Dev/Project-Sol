@@ -1,4 +1,6 @@
+using JetBrains.Annotations;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -7,21 +9,25 @@ public class EnemyManager : MonoBehaviour
 {
     public RVOManager AIManager;
     public SolarSystemManager solarSystemManager;
-    public List<int> allEnemies = new List<int>();
+    public List<Guid> allEnemies = new List<Guid>();
+    public List<Guid> enemiesInSquad = new List<Guid>();
+    public List<Guid> enemiesNotInSquad = new List<Guid>();
     public List<Squadron> squadrons = new List<Squadron>();
     public List<Resource> resourcesOwned = new List<Resource>();
     public Planet homePlanet;
+    public AlliedManager alliedManager;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        alliedManager = FindFirstObjectByType<AlliedManager>();
     }
 
-    public void CreateSquadron(List<int> AIs, string name)
+    public void CreateSquadron(List<Guid> AIs, string name)
     {
-        Debug.Log(AIs.Count);
-        List<int> AIList = new List<int>(AIs);
+
+        List<Guid> AIList = new List<Guid>(AIs);
         AIList.RemoveAt(0);
-        Debug.Log(AIs.Count + "/" + AIList.Count);
+        AddToSquadList(AIs[0]);
         if (name != null)
         {
             squadrons.Add(new Squadron { AIidx = AIList, name = name, leadAI = AIs[0] });
@@ -30,20 +36,48 @@ public class EnemyManager : MonoBehaviour
         {
             squadrons.Add(new Squadron { AIidx = AIList, leadAI = AIs[0] });
         }
-        AIManager.AIs[allEnemies[AIs[0]]].squadron = squadrons[squadrons.Count - 1];
-        Debug.Log("Setting AI " + AIManager.AIs[allEnemies[AIs[0]]].gameObjectRef.name + " as leader of squad");
+        AIManager.AIs[allEnemies.Find(x => x == AIs[0])].squadron = squadrons[squadrons.Count - 1];
+        //Debug.Log("Setting AI " + AIManager.AIs[allEnemies.Find(x => x == AIs[0])].gameObjectRef.name + " as leader of squad");
         for (int i = 0; i < AIList.Count; i++)
         {
-            Debug.Log("Adding AI " + AIManager.AIs[allEnemies[AIList[i]]].gameObjectRef.name + " to squad");
-            AIManager.AIs[allEnemies[AIList[i]]].squadron = squadrons[squadrons.Count - 1];
+            //Debug.Log("Adding AI " + AIManager.AIs[allEnemies.Find(x => x == AIList[i])].gameObjectRef.name + " to squad");
+            AddToSquadList(AIs[i]);
+            AIManager.AIs[allEnemies.Find(x => x == AIList[i])].squadron = squadrons[squadrons.Count - 1];
         }
+
     }
-    public void RemoveFromSquadron(int AI, Squadron squadron)
+    public void AddToSquadList(Guid AI)
+    {
+        if (!enemiesInSquad.Contains(AI))
+        {
+            enemiesInSquad.Add(AI);
+        }
+        if (enemiesNotInSquad.Contains(AI))
+        {
+            enemiesNotInSquad.Remove(AI);
+        }
+
+    }
+    public void DeleteFromSquadList(Guid AI)
+    {
+        if (enemiesInSquad.Contains(AI))
+        {
+            enemiesInSquad.Remove(AI);
+        }
+        if (!enemiesNotInSquad.Contains(AI))
+        {
+            enemiesNotInSquad.Add(AI);
+        }
+
+    }
+    public void RemoveFromSquadron(Guid AI, Squadron squadron)
     {
         int idx = squadron.AIidx.IndexOf(AI);
+        DeleteFromSquadList(AI);
         if (idx != -1)
         {
             squadron.AIidx.RemoveAt(idx);
+
         }
         else
         {
@@ -57,9 +91,11 @@ public class EnemyManager : MonoBehaviour
     public void DestroySquadron(Squadron squadron)
     {
         AIManager.AIs[squadrons[squadrons.IndexOf(squadron)].leadAI].squadron = null;
+        DeleteFromSquadList(squadrons[squadrons.IndexOf(squadron)].leadAI);
         for (int i = 0; i < squadrons[squadrons.IndexOf(squadron)].AIidx.Count; i++)
         {
             AIManager.AIs[squadrons[squadrons.IndexOf(squadron)].AIidx[i]].squadron = null;
+            DeleteFromSquadList(squadrons[squadrons.IndexOf(squadron)].AIidx[i]);
         }
         squadrons.Remove(squadron);
     }
@@ -86,6 +122,7 @@ public class EnemyManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
         for (int i = 0; i < squadrons.Count; i++)
         {
             if (squadrons[i].formation == Formation.V)
@@ -111,17 +148,39 @@ public class EnemyManager : MonoBehaviour
         }
         for (int i = 0; i < allEnemies.Count; i++)
         {
+            if (AIManager.AIs[allEnemies[i]].squadron == null && squadrons.Count < Mathf.FloorToInt(allEnemies.Count / 8))
+            {
+                List<Guid> AIsToAdd = new List<Guid>();
+                AIsToAdd.Add(allEnemies[i]);
+                for (int j = 0; j < Mathf.Min(enemiesNotInSquad.Count, 5); j++)
+                {
+                    AIsToAdd.Add(enemiesNotInSquad[j]);
+                }
+                CreateSquadron(AIsToAdd, RandUtils.RandomGreekLetter());
+            }
+            else if (AIManager.AIs[allEnemies[i]].squadron == null && squadrons.Count > Mathf.FloorToInt(allEnemies.Count / 8))
+            {
+                int squadronIdx = UnityEngine.Random.Range(0, squadrons.Count);
+                squadrons[squadronIdx].AIidx.Add(allEnemies[i]);
+                AIManager.AIs[allEnemies[i]].squadron = squadrons[squadronIdx];
+            }
             if (AIManager.AIs[allEnemies[i]].attackingTarget)
             {
-                if (Vector2.Distance(AIManager.AIs[allEnemies[i]].followTarget.pos, AIManager.AIs[allEnemies[i]].pos) < 10 && !AIManager.AIs[allEnemies[i]].flybyTarget)
+                if (AIManager.AIs[allEnemies[i]].followTarget != Guid.Empty)
                 {
-                    AIManager.SendAI(AIManager.AIs[allEnemies[i]], Vector2.Normalize(AIManager.AIs[allEnemies[i]].pos - AIManager.AIs[allEnemies[i]].followTarget.pos) * 4, 0.1f);
-                    AIManager.AIs[allEnemies[i]].flybyTarget = true;
+                    if (Vector2.Distance(AIManager.AIs[AIManager.AIs[allEnemies[i]].followTarget].pos, AIManager.AIs[allEnemies[i]].pos) < 10 && !AIManager.AIs[allEnemies[i]].flybyTarget)
+                    {
+                        AIManager.SendAI(AIManager.AIs[allEnemies[i]], Vector2.Normalize(AIManager.AIs[allEnemies[i]].pos - AIManager.AIs[AIManager.AIs[allEnemies[i]].followTarget].pos) * 4, 0.1f);
+                        AIManager.AIs[allEnemies[i]].flybyTarget = true;
+                    }
                 }
+
             }
         }
         squadrons.RemoveAll(x => x.AIidx.Count == 0);
 
 
     }
+
+
 }

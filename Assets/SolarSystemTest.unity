@@ -1355,6 +1355,7 @@ MonoBehaviour:
   squadrons: []
   resourcesOwned: []
   homePlanet: {fileID: 0}
+  alliedManager: {fileID: 0}
 --- !u!1 &365000475
 GameObject:
   m_ObjectHideFlags: 0
@@ -6633,7 +6634,7 @@ MonoBehaviour:
   planets: []
   solarSystemManager: {fileID: 0}
   maxSpeed: 40
-  AICount: 2
+  AICount: 100
   alliedAIPrefabs:
   - {fileID: 2785115545321269925, guid: b67e76a8b6daa524da76cafaa8ace12a, type: 3}
   enemyAIPrefabs:
@@ -6644,6 +6645,7 @@ MonoBehaviour:
   AIPickupRadius: 50
   alliedManager: {fileID: 1360453361}
   enemyManager: {fileID: 358780420}
+  AIEnemyDetectionRange: 50
 --- !u!114 &1360453361
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,11 +1,14 @@
 using ECS;
 using JetBrains.Annotations;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -15,8 +18,8 @@ using UnityEngine.UIElements;
 
 public class RVOManager : MonoBehaviour
 {
-    public List<RVOAI> AIs = new List<RVOAI>();
-    public List<int> activeAIs = new List<int>();
+    public Dictionary<Guid, RVOAI> AIs = new Dictionary<Guid, RVOAI>();
+    public List<Guid> activeAIs = new List<Guid>();
     public List<RVOobstacle> obstacles = new List<RVOobstacle>();
     public List<Planet> planets = new List<Planet>();
     public SolarSystemManager solarSystemManager;
@@ -32,6 +35,7 @@ public class RVOManager : MonoBehaviour
     public float AIPickupRadius;
     public AlliedManager alliedManager;
     public EnemyManager enemyManager;
+    public float AIEnemyDetectionRange;
     bool hasSpawned = false;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -59,17 +63,30 @@ public class RVOManager : MonoBehaviour
     }
     public async void SpawnAIs()
     {
-        while (enemyManager.homePlanet == null || alliedManager.homePlanet == null)
+        while (enemyManager.homePlanet == null || alliedManager.homePlanet == null || alliedManager.homePlanet.colliderP == null || enemyManager.homePlanet.colliderP == null)
         {
             await Task.Yield();
+
         }
         for (int i = 0; i < AICount; i++)
         {
-            SpawnAI(new Vector2(alliedManager.homePlanet.gameObject.transform.position.x + UnityEngine.Random.Range(0, 50), alliedManager.homePlanet.gameObject.transform.position.y + UnityEngine.Random.Range(0, 50)), alliedAIPrefabs[0]);
+            Vector2 randomPoint = UnityEngine.Random.insideUnitCircle;
+
+            randomPoint.Normalize();
+
+            float finalRadius = UnityEngine.Random.Range((alliedManager.homePlanet.colliderP.radius * Mathf.Max(alliedManager.homePlanet.transform.lossyScale.x, alliedManager.homePlanet.transform.lossyScale.y, alliedManager.homePlanet.transform.lossyScale.z)) + 5, alliedManager.homePlanet.colliderP.radius * Mathf.Max(alliedManager.homePlanet.transform.lossyScale.x, alliedManager.homePlanet.transform.lossyScale.y, alliedManager.homePlanet.transform.lossyScale.z) + 45);
+            Vector3 finalPos = (Vector3)(randomPoint * finalRadius) + alliedManager.homePlanet.transform.position;
+            SpawnAI(finalPos, alliedAIPrefabs[0]);
         }
         for (int i = 0; i < AICount; i++)
         {
-            SpawnAI(new Vector2(enemyManager.homePlanet.gameObject.transform.position.x + UnityEngine.Random.Range(0, 50), enemyManager.homePlanet.gameObject.transform.position.y + UnityEngine.Random.Range(0, 50)), enemyAIPrefabs[0]);
+            Vector2 randomPoint = UnityEngine.Random.insideUnitCircle;
+
+            randomPoint.Normalize();
+
+            float finalRadius = UnityEngine.Random.Range(enemyManager.homePlanet.colliderP.radius * Mathf.Max(enemyManager.homePlanet.transform.lossyScale.x, enemyManager.homePlanet.transform.lossyScale.y, enemyManager.homePlanet.transform.lossyScale.z) + 5, enemyManager.homePlanet.colliderP.radius * Mathf.Max(enemyManager.homePlanet.transform.lossyScale.x, enemyManager.homePlanet.transform.lossyScale.y, enemyManager.homePlanet.transform.lossyScale.z) + 45);
+            Vector3 finalPos = (Vector3)(randomPoint * finalRadius) + enemyManager.homePlanet.transform.position;
+            SpawnAI(finalPos, enemyAIPrefabs[0]);
         }
         LoadingState.AIFinishedLoading = true;
     }
@@ -91,6 +108,12 @@ public class RVOManager : MonoBehaviour
         DynamicBuffer<ShipLibraryItem> library = em.GetBuffer<ShipLibraryItem>(libraryEntity);
         ShipType type = instantiatedObj.GetComponent<AIStats>().type;
         Faction faction = instantiatedObj.GetComponent<AIStats>().faction;
+
+        AILifeCycle lifeCycle = instantiatedObj.GetComponent<AILifeCycle>();
+
+
+
+
         Entity prefabToInstantiate = Entity.Null;
         for (int i = 0; i < library.Length; i++)
         {
@@ -106,13 +129,17 @@ public class RVOManager : MonoBehaviour
             LocalTransform entityTransform = em.GetComponentData<LocalTransform>(newEntity);
             entityTransform.Position = new float3(pos.x, pos.y, 0);
             em.SetComponentData(newEntity, entityTransform);
-
+            Guid id = Guid.NewGuid();
+            lifeCycle.AI = id;
+            lifeCycle.RVOManager = this;
             RVOAI ai = new RVOAI
             {
                 pos = instantiatedObj.transform.position,
                 vel = Vector2.zero,
                 gameObjectRef = instantiatedObj,
                 rad = rad + AIRadiusBuffer,
+                lifeCycle = lifeCycle,
+                id = id
             };
             ai.entity = newEntity;
 
@@ -126,9 +153,11 @@ public class RVOManager : MonoBehaviour
                     damage = stats.weapons[i].damage,
                     positionOffset = instantiatedObj.transform.InverseTransformPoint(stats.weapons[i].transform.position),
                     range = stats.weapons[i].range,
-                    bulletSpeed = stats.weapons[i].speed
+                    bulletSpeed = stats.weapons[i].speed,
+                    radius = stats.weapons[i].radius,
                 });
             }
+
             RVOAIData data = new RVOAIData
             {
                 currentSpeed = 0,
@@ -137,21 +166,20 @@ public class RVOManager : MonoBehaviour
                 faction = stats.faction,
                 type = stats.type,
                 weapons = weapons,
-
+                radius = collider.radius,
             };
             ai.data = data;
 
-
             em.AddComponentData(ai.entity, data);
 
-            AIs.Add(ai);
+            AIs.Add(id, ai);
             if (data.faction == Faction.Freindly)
             {
-                alliedManager.allAllied.Add(AIs.Count - 1);
+                alliedManager.allAllied.Add(id);
             }
             else if (data.faction == Faction.Enemy)
             {
-                enemyManager.allEnemies.Add(AIs.Count - 1);
+                enemyManager.allEnemies.Add(id);
             }
         }
 
@@ -160,29 +188,15 @@ public class RVOManager : MonoBehaviour
 
 
     }
-    public void RemoveAI(int AI)
+    public void RemoveAI(Guid AI)
     {
-        for (int i = 0; i < activeAIs.Count; i++)
-        {
-            if (activeAIs[i] == AI)
-            {
-                activeAIs.RemoveAt(i);
-            }
-            else if (activeAIs[i] > AI)
-            {
-                activeAIs[i]--;
-            }
-        }
-        for (int i = 0; i < alliedManager.allAllied.Count; i++)
-        {
-            if (alliedManager.allAllied[i] > AI)
-            {
-                alliedManager.allAllied[i]--;
-            }
-        }
+        activeAIs.Remove(AI);
+        alliedManager.allAllied.Remove(AI);
+        enemyManager.allEnemies.Remove(AI);
+
         for (int i = 0; i < alliedManager.squadrons.Count; i++)
         {
-            for (int j = 0; j < alliedManager.squadrons[i].AIidx.Count; j++)
+            for (int j = alliedManager.squadrons[i].AIidx.Count - 1; j >= 0; j--)
             {
                 if (alliedManager.squadrons[i].leadAI == AI)
                 {
@@ -192,22 +206,11 @@ public class RVOManager : MonoBehaviour
                 {
                     alliedManager.RemoveFromSquadron(AI, alliedManager.squadrons[i]);
                 }
-                else if (alliedManager.squadrons[i].AIidx[j] > AI)
-                {
-                    alliedManager.squadrons[i].AIidx[j]--;
-                }
-            }
-        }
-        for (int i = 0; i < enemyManager.allEnemies.Count; i++)
-        {
-            if (enemyManager.allEnemies[i] > AI)
-            {
-                enemyManager.allEnemies[i]--;
             }
         }
         for (int i = 0; i < enemyManager.squadrons.Count; i++)
         {
-            for (int j = 0; j < enemyManager.squadrons[i].AIidx.Count; j++)
+            for (int j = enemyManager.squadrons[i].AIidx.Count - 1; j >= 0; j--)
             {
                 if (enemyManager.squadrons[i].leadAI == AI)
                 {
@@ -217,14 +220,15 @@ public class RVOManager : MonoBehaviour
                 {
                     enemyManager.RemoveFromSquadron(AI, enemyManager.squadrons[i]);
                 }
-                else if (enemyManager.squadrons[i].AIidx[j] > AI)
-                {
-                    enemyManager.squadrons[i].AIidx[j]--;
-                }
             }
         }
-        Destroy(AIs[AI].gameObjectRef);
-        AIs.RemoveAt(AI);
+        if (activeAIs.Contains(AI))
+        {
+            activeAIs.Remove(AI);
+        }
+
+        AIs.Remove(AI);
+        Debug.Log("Removed!");
     }
     public void SendAI(RVOAI ai, Vector2 position, float distance, bool disableAttack = true)
     {
@@ -233,20 +237,19 @@ public class RVOManager : MonoBehaviour
             ai.data.currentSpeed = ai.data.maxSpeed;
         }
         //Debug.Log("Sending AI" + ai.gameObjectRef.name + " to position " + position);
-        if (!activeAIs.Contains(AIs.IndexOf(ai)))
+        if (!activeAIs.Contains(ai.id))
         {
             ai.target = position + new Vector2(UnityEngine.Random.Range(-distance / 2, distance / 2), UnityEngine.Random.Range(-distance / 2, distance / 2));
             if (disableAttack)
             {
                 ai.visualTarget = position;
-
-                ai.followTarget = null;
                 ai.attackingTarget = false;
+                ai.followTarget = Guid.Empty;
             }
 
             ai.targetSet = true;
             ai.distanceToKeep = UnityEngine.Random.Range(0f, distance);
-            activeAIs.Add(AIs.IndexOf(ai));
+            activeAIs.Add(ai.id);
         }
         else
         {
@@ -254,8 +257,8 @@ public class RVOManager : MonoBehaviour
             if (disableAttack)
             {
                 ai.visualTarget = position;
-                ai.followTarget = null;
                 ai.attackingTarget = false;
+                ai.followTarget = Guid.Empty;
             }
 
             ai.targetSet = true;
@@ -270,28 +273,28 @@ public class RVOManager : MonoBehaviour
         }
         if (flyby)
         {
-            attacker.target = attacked.pos - Vector2.Normalize(attacker.pos - attacked.pos) * 50;
+            attacker.target = attacked.pos + Vector2.Normalize(attacked.pos - attacker.pos) * 50;
             attacker.flybyTarget = true;
         }
         attacker.targetSet = true;
-        attacker.followTarget = attacked;
-        attacker.distanceToKeep = 1;
+        attacker.followTarget = attacked.id;
+        attacker.distanceToKeep = UnityEngine.Random.Range(3f, 15f);
         attacker.attackingTarget = true;
-        int idx = activeAIs.IndexOf(AIs.IndexOf(attacker));
-        if (idx == -1)
+        //int idx = activeAIs.IndexOf(AIs.IndexOf(attacker));
+        if (!activeAIs.Contains(attacker.id))
         {
-            activeAIs.Add(AIs.IndexOf(attacker));
+            activeAIs.Add(attacker.id);
         }
     }
     public void LoadAIs(SaveableAIGroup data)
     {
         for (int i = 0; i < AIs.Count; i++)
         {
-            Destroy(AIs[i].gameObjectRef.gameObject);
+            Destroy(AIs.ElementAt(i).Value.gameObjectRef);
         }
         AIs.Clear();
         activeAIs.Clear();
-        AIs = new List<RVOAI>();
+        AIs = new Dictionary<Guid, RVOAI>();
         for (int i = 0; i < data.AIs.Count; i++)
         {
             Debug.Log(data.AIs[i].data.type.ToString());
@@ -308,12 +311,12 @@ public class RVOManager : MonoBehaviour
                 gameObjectRef = instantiatedAI,
                 attackingTarget = data.AIs[i].enemyTarget,
                 data = data.AIs[i].data,
-
+                id = data.AIs[i].id,
             };
-            AIs.Add(ai);
+            AIs.Add(data.AIs[i].id, ai);
             if (ai.targetSet)
             {
-                activeAIs.Add(i);
+                activeAIs.Add(data.AIs[i].id);
             }
         }
         alliedManager.squadrons = data.squadrons;
@@ -328,9 +331,10 @@ public class RVOManager : MonoBehaviour
 
         for (int i = 0; i < AIs.Count; i++)
         {
-            if (data.AIs[i].followTargetIdx != -1)
+            if (data.AIs[i].followTargetId != null)
             {
-                AIs[i].followTarget = AIs[data.AIs[i].followTargetIdx];
+                AIs[data.AIs[i].id].followTarget = data.AIs[i].followTargetId;
+
             }
         }
     }
@@ -340,31 +344,26 @@ public class RVOManager : MonoBehaviour
         List<SaveableRVOAI> saveableRVOAIs = new List<SaveableRVOAI>();
         for (int i = 0; i < AIs.Count; i++)
         {
+            RVOAI ai = AIs.ElementAt(i).Value;
             SaveableRVOAI saveableAI = new SaveableRVOAI
             {
-                targetSet = AIs[i].targetSet,
-                distanceToKeep = AIs[i].distanceToKeep,
-                pos = AIs[i].pos,
-                rad = AIs[i].rad,
-                target = AIs[i].target,
-                vel = AIs[i].vel,
+                targetSet = ai.targetSet,
+                distanceToKeep = ai.distanceToKeep,
+                pos = ai.pos,
+                rad = ai.rad,
+                target = ai.target,
+                vel = ai.vel,
 
-                rotation = AIs[i].gameObjectRef.transform.rotation,
-                enemyTarget = AIs[i].attackingTarget,
-                data = AIs[i].data,
-                squadron = AIs[i].squadron,
-                visualTarget = AIs[i].visualTarget,
+                rotation = ai.gameObjectRef.transform.rotation,
+                enemyTarget = ai.attackingTarget,
+                data = ai.data,
+                squadron = ai.squadron,
+                visualTarget = ai.visualTarget,
 
 
             };
-            if (AIs[i].followTarget != null)
-            {
-                saveableAI.followTargetIdx = AIs.FindIndex(x => x == AIs[i].followTarget);
-            }
-            else
-            {
-                saveableAI.followTargetIdx = -1;
-            }
+            saveableAI.followTargetId = ai.followTarget;
+
             saveableRVOAIs.Add(saveableAI);
         }
         List<Squadron> squadrons = alliedManager.squadrons;
@@ -387,39 +386,48 @@ public class RVOManager : MonoBehaviour
         //        hasSpawned = true;
         //    }
         //}
-        NativeArray<float2> positions = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);
-        NativeArray<float2> velocities = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);
-        NativeArray<float2> goals = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);
-        NativeArray<float> radiuses = new NativeArray<float>(activeAIs.Count, Allocator.TempJob);
-        NativeArray<float2> results = new NativeArray<float2>(activeAIs.Count, Allocator.TempJob);
-        NativeArray<bool> finished = new NativeArray<bool>(activeAIs.Count, Allocator.TempJob);
+        int activeCount = activeAIs.Count;
+        int allCount = AIs.Count;
+        NativeArray<float2> positions = new NativeArray<float2>(activeCount, Allocator.TempJob);
+        NativeArray<float2> velocities = new NativeArray<float2>(activeCount, Allocator.TempJob);
+        NativeArray<float2> goals = new NativeArray<float2>(activeCount, Allocator.TempJob);
+        NativeArray<float> radiuses = new NativeArray<float>(activeCount, Allocator.TempJob);
+        NativeArray<float2> results = new NativeArray<float2>(activeCount, Allocator.TempJob);
+        NativeArray<bool> finished = new NativeArray<bool>(activeCount, Allocator.TempJob);
         NativeArray<float3> obstaclePosRad = new NativeArray<float3>(obstacles.Count, Allocator.TempJob);
         NativeArray<float2> obstacleVelocities = new NativeArray<float2>(obstacles.Count, Allocator.TempJob);
-        NativeArray<float> distanceToKeep = new NativeArray<float>(activeAIs.Count, Allocator.TempJob);
-        NativeArray<float2> pushResults = new NativeArray<float2>(AIs.Count, Allocator.TempJob);
-        NativeArray<float2> allPositions = new NativeArray<float2>(AIs.Count, Allocator.TempJob);
-        NativeArray<float> allRadius = new NativeArray<float>(AIs.Count, Allocator.TempJob);
-        NativeArray<float> maxSpeeds = new NativeArray<float>(activeAIs.Count, Allocator.TempJob);
+        NativeArray<float> distanceToKeep = new NativeArray<float>(activeCount, Allocator.TempJob);
+        NativeArray<float2> pushResults = new NativeArray<float2>(allCount, Allocator.TempJob);
+        NativeArray<float2> allPositions = new NativeArray<float2>(allCount, Allocator.TempJob);
+        NativeArray<float> allRadius = new NativeArray<float>(allCount, Allocator.TempJob);
+        NativeArray<float> maxSpeeds = new NativeArray<float>(activeCount, Allocator.TempJob);
+        NativeArray<Faction> factions = new NativeArray<Faction>(allCount, Allocator.TempJob);
+        NativeArray<Guid> attackingIdxs = new NativeArray<Guid>(allCount, Allocator.TempJob);
+        NativeArray<Guid> ids = new NativeArray<Guid>(allCount, Allocator.TempJob);
         for (int i = 0; i < activeAIs.Count; i++)
         {
             RVOAI ai = AIs[activeAIs[i]];
             ai.pos = ai.gameObjectRef.transform.position;
-            if (ai.followTarget != null)
+            if (ai.followTarget != Guid.Empty)
             {
-                if (ai.flybyTarget)
+                if (!AIs.ContainsKey(ai.followTarget))
                 {
-                    Vector2 directionToEnemy = (ai.followTarget.pos - ai.pos).normalized;
+                    ai.followTarget = Guid.Empty;
+                }
+                else if (ai.flybyTarget)
+                {
+                    Vector2 directionToEnemy = (AIs[ai.followTarget].pos - ai.pos).normalized;
                     float flybyDistance = 50f;
-                    ai.target = ai.followTarget.pos + (directionToEnemy * flybyDistance);
+                    ai.target = AIs[ai.followTarget].pos + (directionToEnemy * flybyDistance);
                 }
                 else
                 {
-                    ai.target = ai.followTarget.pos;
+                    ai.target = AIs[ai.followTarget].pos;
                 }
             }
-            if (ai.followTarget != null && !ai.flybyTarget)
+            if (ai.followTarget != Guid.Empty && !ai.flybyTarget)
             {
-                ai.target = ai.followTarget.pos;
+                ai.target = AIs[ai.followTarget].pos;
             }
             maxSpeeds[i] = AIs[activeAIs[i]].data.currentSpeed;
             positions[i] = ai.pos;
@@ -437,10 +445,15 @@ public class RVOManager : MonoBehaviour
             obstacles[i].previousPos = (Vector2)obstacles[i].objRef.transform.position;
 
         }
-        for (int i = 0; i < AIs.Count; i++)
+        int idx = 0;
+        foreach (var (id, ai) in AIs)
         {
-            allPositions[i] = (Vector2)AIs[i].gameObjectRef.transform.position;
-            allRadius[i] = AIs[i].rad;
+
+            allPositions[idx] = (Vector2)ai.gameObjectRef.transform.position;
+            factions[idx] = ai.data.faction;
+            allRadius[idx] = ai.rad;
+            ids[idx] = id;
+            idx++;
         }
         DetectNearbyJob nearbyJob = new DetectNearbyJob
         {
@@ -448,34 +461,51 @@ public class RVOManager : MonoBehaviour
             nearbyMap = pushResults,
             detectionRadiusSq = allRadius
         };
-        for (int i = 0; i < pushResults.Length; i++) pushResults[i] = float2.zero;
-        JobHandle nearbyHandle = nearbyJob.Schedule(AIs.Count, 64);
-        nearbyHandle.Complete();
-
-        for (int i = 0; i < AIs.Count; i++)
+        DetectNearbyEnemiesJob nearbyEnemiesJob = new DetectNearbyEnemiesJob
         {
-            AIs[i].gameObjectRef.transform.position += (Vector3)((Vector2)pushResults[i] * pushSpeed * Time.deltaTime);
-            AIs[i].pos = AIs[i].gameObjectRef.transform.position;
+            positions = allPositions,
+            factions = factions,
+            detectionRad = AIEnemyDetectionRange,
+            nearbyIdx = attackingIdxs,
+            ids = ids
+        };
+        for (int i = 0; i < pushResults.Length; i++) pushResults[i] = float2.zero;
+        JobHandle nearbyHandle = nearbyJob.Schedule(allCount, 64);
+        nearbyHandle.Complete();
+        JobHandle nearbyEnemiesHandle = nearbyEnemiesJob.Schedule(allCount, 64);
+        nearbyEnemiesHandle.Complete();
+        idx = 0;
+        foreach (var (id, ai) in AIs)
+        {
+
+            ai.gameObjectRef.transform.position += (Vector3)((Vector2)pushResults[idx] * pushSpeed * Time.deltaTime);
+            if (attackingIdxs[idx] != Guid.Empty)
+            {
+                AttackAI(ai, AIs[attackingIdxs[idx]], true);
+            }
+            ai.pos = ai.gameObjectRef.transform.position;
             bool hasParent = false;
             for (int j = 0; j < planets.Count; j++)
             {
                 SphereCollider collider = planets[j].gameObject.GetComponentInChildren<SphereCollider>();
-                if (Vector2.Distance(planets[j].gameObject.transform.position, AIs[i].gameObjectRef.transform.position) < (collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + AIPickupRadius)
+                if (Vector2.Distance(planets[j].gameObject.transform.position, ai.gameObjectRef.transform.position) < (collider.radius * math.max(collider.transform.lossyScale.x, collider.transform.lossyScale.y)) + AIPickupRadius)
                 {
-                    AIs[i].gameObjectRef.transform.parent = planets[j].gameObject.transform;
-                    AIs[i].gameObjectRef.GetComponentInChildren<TrailRenderer>().enabled = false;
+                    ai.gameObjectRef.transform.parent = planets[j].gameObject.transform;
+                    ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().emitting = false;
                     hasParent = true;
                 }
             }
             if (!hasParent)
             {
-                if (AIs[i].gameObjectRef.transform.parent != null)
+                if (ai.gameObjectRef.transform.parent != null)
                 {
-                    AIs[i].gameObjectRef.transform.parent = null;
-                    AIs[i].gameObjectRef.GetComponentInChildren<TrailRenderer>().enabled = true;
+                    ai.gameObjectRef.transform.parent = null;
+                    ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().Clear();
+                    ai.gameObjectRef.GetComponentInChildren<TrailRenderer>().emitting = true;
                 }
 
             }
+
         }
         CalculateRelativeVelocities job = new CalculateRelativeVelocities
         {
@@ -491,17 +521,20 @@ public class RVOManager : MonoBehaviour
             distancesToKeep = distanceToKeep
         };
         for (int i = 0; i < results.Length; i++) results[i] = float2.zero;
-        JobHandle handle = job.Schedule(activeAIs.Count, 64);
+        JobHandle handle = job.Schedule(activeCount, 64);
         handle.Complete();
 
         List<int> AIsToRemove = new List<int>();
-        for (int i = 0; i < activeAIs.Count; i++)
+        for (int i = 0; i < activeCount; i++)
         {
+
             if (finished[i] && AIs[activeAIs[i]].followTarget == null)
             {
                 AIs[activeAIs[i]].targetSet = false;
+
                 continue;
             }
+
             Vector2 smoothedVel = (Vector2.Lerp(AIs[activeAIs[i]].vel, new Vector2(results[i].x, results[i].y), Time.deltaTime * 5f));
             AIs[activeAIs[i]].gameObjectRef.transform.position += (Vector3)smoothedVel * Time.deltaTime;
             AIs[activeAIs[i]].vel = smoothedVel;
@@ -520,29 +553,47 @@ public class RVOManager : MonoBehaviour
 
         }
 
-        for (int i = activeAIs.Count - 1; i >= 0; i--)
+        for (int i = activeCount - 1; i >= 0; i--)
         {
-            if (finished[i] && AIs[activeAIs[i]].followTarget == null)
+            if (finished[i] && AIs[activeAIs[i]].followTarget == Guid.Empty)
             {
                 AIs[activeAIs[i]].targetSet = false;
                 activeAIs.RemoveAt(i);
             }
-            else if (finished[i] && AIs[activeAIs[i]].followTarget != null)
+            else if (finished[i])
             {
-                AIs[activeAIs[i]].flybyTarget = false;
-                AttackAI(AIs[activeAIs[i]], AIs[activeAIs[i]].followTarget, true);
+                RVOAI ai = AIs[activeAIs[i]];
+                if (AIs.ContainsKey(ai.followTarget))
+                {
+                    float dist = Vector2.Distance(ai.pos, AIs[ai.followTarget].pos);
+                    ai.flybyTarget = false;
+                    bool doFlyby = dist > 10f;
+                    AttackAI(ai, AIs[ai.followTarget], doFlyby);
+                }
             }
         }
 
 
-        for (int i = 0; i < AIs.Count; i++)
+        foreach (var (id, ai) in AIs)
         {
-            if (em.Exists(AIs[i].entity))
+            if (ai.gameObjectRef == null) continue;
+            if (!em.Exists(ai.entity))
             {
-                var t = em.GetComponentData<LocalTransform>(AIs[i].entity);
-                t.Position = AIs[i].gameObjectRef.transform.position;
-                t.Rotation = AIs[i].gameObjectRef.transform.rotation;
-                em.SetComponentData(AIs[i].entity, t);
+                Destroy(ai.gameObjectRef);
+                continue;
+            }
+            if (ai.gameObjectRef.transform.position.z != 0)
+            {
+                ai.gameObjectRef.transform.position = new Vector3(ai.gameObjectRef.transform.position.x, ai.gameObjectRef.transform.position.y, 0);
+            }
+
+            if (em.Exists(ai.entity) && em.HasComponent<LocalTransform>(ai.entity))
+            {
+                var t = em.GetComponentData<LocalTransform>(ai.entity);
+                t.Position = ai.gameObjectRef.transform.position;
+                t.Rotation = ai.gameObjectRef.transform.rotation;
+                em.SetComponentData(ai.entity, t);
+
             }
         }
         positions.Dispose();
@@ -558,6 +609,38 @@ public class RVOManager : MonoBehaviour
         pushResults.Dispose();
         allRadius.Dispose();
         maxSpeeds.Dispose();
+        factions.Dispose();
+        attackingIdxs.Dispose();
+        ids.Dispose();
+    }
+    [BurstCompile]
+    public struct DetectNearbyEnemiesJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<float2> positions;
+        [ReadOnly] public NativeArray<Faction> factions;
+        [ReadOnly] public NativeArray<Guid> ids;
+        [ReadOnly] public float detectionRad;
+        public NativeArray<Guid> nearbyIdx;
+
+        public void Execute(int i)
+        {
+            float2 myPos = positions[i];
+            Faction myFaction = factions[i];
+            Guid nearbyEnemy = new Guid();
+            float closestDistance = Mathf.Infinity;
+            for (int j = 0; j < positions.Length; j++)
+            {
+                if (i == j || factions[j] == myFaction) continue;
+
+                float dsq = math.distancesq(myPos, positions[j]);
+                if (dsq <= detectionRad && dsq < closestDistance)
+                {
+                    nearbyEnemy = ids[j];
+
+                }
+            }
+            nearbyIdx[i] = nearbyEnemy;
+        }
     }
     [BurstCompile]
     public struct DetectNearbyJob : IJobParallelFor
@@ -584,7 +667,8 @@ public class RVOManager : MonoBehaviour
                 {
                     float2 diff = myPos - allPositions[j].xy;
 
-                    separationVec += math.normalizesafe(diff / dSq);
+                    float pushStrength = 1.0f - math.clamp(dist / math.sqrt(detectionRadiusSq[i] + detectionRadiusSq[j]), 0f, 1f);
+                    separationVec += math.normalizesafe(diff) * pushStrength;
                 }
             }
             nearbyMap[i] = separationVec;
@@ -625,7 +709,7 @@ public class RVOManager : MonoBehaviour
             float2 prefVel = (toGoal / distToGoal) * maxSpeed[i];
             float myRad = radiuses[i];
             float timeHorizonObstacle = 4.0f;
-            float timeHorizonAI = 1.5f;
+            float timeHorizonAI = 3.0f;
 
             float2 bestVel = float2.zero;
             float minPenalty = float.MaxValue;
@@ -637,7 +721,7 @@ public class RVOManager : MonoBehaviour
 
             foreach (float speed in speeds)
             {
-                for (int step = -8; step <= 8; step++)
+                for (int step = -12; step <= 12; step++)
                 {
                     float angle = step * 0.2f;
                     float cos = math.cos(angle);
