@@ -26,30 +26,29 @@ namespace Ra
         public Dictionary<Vector3, GameObject> pieces = new Dictionary<Vector3, GameObject>();
         public List<Station> stations = new List<Station>();
 
-        public void OnEnable()
-        {
-            mousePosition.Enable();
-            leftMouse.Enable();
-            Rotate.Enable();
-            rightMouse.Enable();
-            kill.Enable();
-        }
-        public void OnDisable()
-        {
-            mousePosition.Disable();
-            leftMouse.Disable();
-            Rotate.Disable();
-            rightMouse.Disable();
-            kill.Disable();
-        }
+        //public void OnEnable()
+        //{
+        //    mousePosition.Enable();
+        //    leftMouse.Enable();
+        //    Rotate.Enable();
+        //    rightMouse.Enable();
+        //    kill.Enable();
+        //}
+        //public void OnDisable()
+        //{
+        //    mousePosition.Disable();
+        //    leftMouse.Disable();
+        //    Rotate.Disable();
+        //    rightMouse.Disable();
+        //    kill.Disable();
+        //}
         void Awake()
         {
             input = new PlayerInput();
-            mousePosition = input.Main.MousePos;
-            leftMouse = input.Main.MouseClickLeft;
-            Rotate = input.Main.Rotate;
-            rightMouse = input.Main.MouseClickRight;
-            kill = input.Main.Kill;
+            mousePosition = input.SpaceStationBuilding.MousePos;
+            leftMouse = input.SpaceStationBuilding.Placepiece;
+            Rotate = input.SpaceStationBuilding.Removepiece;
+            kill = input.SpaceStationBuilding.Removepiece;
 
         }
         private GameObject attachedObject = null; // Track the currently attached object
@@ -70,7 +69,7 @@ namespace Ra
                 // Move attached object with mouse
                 //attachedObject.transform.position = (Vector2)mouseWorldPos
 
-                if(attachedObject.tag != "clone")
+                if (attachedObject.tag != "clone")
                 {
                     GameObject clone = Instantiate(attachedObject, mouseWorldPos, Quaternion.identity); // if the piece is a parent, make a child and move that
                     clone.tag = "clone";
@@ -81,7 +80,7 @@ namespace Ra
                 {
                     attachedObject.transform.position = (Vector2)mouseWorldPos;
                 }
-                
+
 
                 attachedObject.transform.position = (Vector2)mouseWorldPos;
 
@@ -104,7 +103,7 @@ namespace Ra
             {
                 if (attachedObject != null)
                 {
-                    if(attachedObject.transform.position.x <= -7) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
+                    if (attachedObject.transform.position.x <= -7) // FINN, CHANGE -6 TO FURTHEST LEFT POSITION OF DEVELOPMENT AREA, THIS IS A TEMP FIX TO PREVENT BUGS OF PIECES BEING PLACED IN THE UI AND THEN PICKED UP AND PLACED IN THE DEVELOPMENT AREA FOR FREE
                     {
                         ATpiece.Remove(attachedObject);
                         Destroy(attachedObject);
@@ -138,7 +137,7 @@ namespace Ra
 
         public void DrawConnectors()
         {
-            if(ATpiece != null)
+            if (ATpiece != null)
             {
                 DrawConnector(ATpiece);
                 MakeStation();
@@ -147,7 +146,7 @@ namespace Ra
         void DrawConnector(List<GameObject> list)
         {
             ClearPieces();
-            if(list.Count >= 1)
+            if (list.Count >= 1)
             {
                 for (int i = 0; i < list.Count; i++)
                 {
@@ -174,7 +173,7 @@ namespace Ra
                     // + new Vector3((start.y == 0) ? start.x <= 0 ? distance / 2 : -distance / 2 : 0, (start.x == 0) ? start.y <= 0 ? distance / 2 : -distance / 2 : 0), rotation * Quaternion.Euler(0, 0, (start.x == 0) ? start.y <= 0 ? -90 : 90 : 0)
                     GameObject instantiatedPiece = Instantiate(myPrefab, start, rotation);
                     Connectors.Add(instantiatedPiece);
-                    instantiatedPiece.transform.position = (start - finish)/2;
+                    instantiatedPiece.transform.position = (start - finish) / 2;
                     instantiatedPiece.transform.localScale = new Vector3(distance, 0.25f, 0.25f);
                     Debug.Log("Drew connector at: " + instantiatedPiece.transform.position);
                     // draw the connector pieces

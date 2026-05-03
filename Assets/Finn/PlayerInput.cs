@@ -361,6 +361,94 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Space Station Building"",
+            ""id"": ""2af1769c-182f-4972-8097-8bc8c365eb9e"",
+            ""actions"": [
+                {
+                    ""name"": ""Exit builder"",
+                    ""type"": ""Button"",
+                    ""id"": ""070c3727-5a8d-4c5f-a80a-7cdb367c2cda"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Place piece"",
+                    ""type"": ""Button"",
+                    ""id"": ""aa1aa941-7e7f-4560-b273-a4547fc8fdd7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Remove piece"",
+                    ""type"": ""Button"",
+                    ""id"": ""732fe7a7-e0ae-4ec7-bda8-ba932aeb52c8"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MousePos"",
+                    ""type"": ""Value"",
+                    ""id"": ""db232fb3-dec3-4a6f-aab2-ada81f865f4e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""3fc0b74e-3f68-4f56-b84a-465bb2e212f6"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Exit builder"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""217e6c5e-7db2-40f5-9d11-7d8dd285a3b3"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Place piece"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1ff71eed-771b-49d9-9625-c22fbbf27bb2"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Remove piece"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""bf5905a1-3c92-474d-92c3-7444351dc759"",
+                    ""path"": ""<Mouse>/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MousePos"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -377,11 +465,18 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         m_Main_MouseClickRight = m_Main.FindAction("MouseClickRight", throwIfNotFound: true);
         m_Main_Scroll = m_Main.FindAction("Scroll", throwIfNotFound: true);
         m_Main_Pause = m_Main.FindAction("Pause", throwIfNotFound: true);
+        // Space Station Building
+        m_SpaceStationBuilding = asset.FindActionMap("Space Station Building", throwIfNotFound: true);
+        m_SpaceStationBuilding_Exitbuilder = m_SpaceStationBuilding.FindAction("Exit builder", throwIfNotFound: true);
+        m_SpaceStationBuilding_Placepiece = m_SpaceStationBuilding.FindAction("Place piece", throwIfNotFound: true);
+        m_SpaceStationBuilding_Removepiece = m_SpaceStationBuilding.FindAction("Remove piece", throwIfNotFound: true);
+        m_SpaceStationBuilding_MousePos = m_SpaceStationBuilding.FindAction("MousePos", throwIfNotFound: true);
     }
 
     ~@PlayerInput()
     {
         UnityEngine.Debug.Assert(!m_Main.enabled, "This will cause a leak and performance issues, PlayerInput.Main.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_SpaceStationBuilding.enabled, "This will cause a leak and performance issues, PlayerInput.SpaceStationBuilding.Disable() has not been called.");
     }
 
     /// <summary>
@@ -648,6 +743,135 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="MainActions" /> instance referencing this action map.
     /// </summary>
     public MainActions @Main => new MainActions(this);
+
+    // Space Station Building
+    private readonly InputActionMap m_SpaceStationBuilding;
+    private List<ISpaceStationBuildingActions> m_SpaceStationBuildingActionsCallbackInterfaces = new List<ISpaceStationBuildingActions>();
+    private readonly InputAction m_SpaceStationBuilding_Exitbuilder;
+    private readonly InputAction m_SpaceStationBuilding_Placepiece;
+    private readonly InputAction m_SpaceStationBuilding_Removepiece;
+    private readonly InputAction m_SpaceStationBuilding_MousePos;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Space Station Building".
+    /// </summary>
+    public struct SpaceStationBuildingActions
+    {
+        private @PlayerInput m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public SpaceStationBuildingActions(@PlayerInput wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "SpaceStationBuilding/Exitbuilder".
+        /// </summary>
+        public InputAction @Exitbuilder => m_Wrapper.m_SpaceStationBuilding_Exitbuilder;
+        /// <summary>
+        /// Provides access to the underlying input action "SpaceStationBuilding/Placepiece".
+        /// </summary>
+        public InputAction @Placepiece => m_Wrapper.m_SpaceStationBuilding_Placepiece;
+        /// <summary>
+        /// Provides access to the underlying input action "SpaceStationBuilding/Removepiece".
+        /// </summary>
+        public InputAction @Removepiece => m_Wrapper.m_SpaceStationBuilding_Removepiece;
+        /// <summary>
+        /// Provides access to the underlying input action "SpaceStationBuilding/MousePos".
+        /// </summary>
+        public InputAction @MousePos => m_Wrapper.m_SpaceStationBuilding_MousePos;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_SpaceStationBuilding; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="SpaceStationBuildingActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(SpaceStationBuildingActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="SpaceStationBuildingActions" />
+        public void AddCallbacks(ISpaceStationBuildingActions instance)
+        {
+            if (instance == null || m_Wrapper.m_SpaceStationBuildingActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_SpaceStationBuildingActionsCallbackInterfaces.Add(instance);
+            @Exitbuilder.started += instance.OnExitbuilder;
+            @Exitbuilder.performed += instance.OnExitbuilder;
+            @Exitbuilder.canceled += instance.OnExitbuilder;
+            @Placepiece.started += instance.OnPlacepiece;
+            @Placepiece.performed += instance.OnPlacepiece;
+            @Placepiece.canceled += instance.OnPlacepiece;
+            @Removepiece.started += instance.OnRemovepiece;
+            @Removepiece.performed += instance.OnRemovepiece;
+            @Removepiece.canceled += instance.OnRemovepiece;
+            @MousePos.started += instance.OnMousePos;
+            @MousePos.performed += instance.OnMousePos;
+            @MousePos.canceled += instance.OnMousePos;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="SpaceStationBuildingActions" />
+        private void UnregisterCallbacks(ISpaceStationBuildingActions instance)
+        {
+            @Exitbuilder.started -= instance.OnExitbuilder;
+            @Exitbuilder.performed -= instance.OnExitbuilder;
+            @Exitbuilder.canceled -= instance.OnExitbuilder;
+            @Placepiece.started -= instance.OnPlacepiece;
+            @Placepiece.performed -= instance.OnPlacepiece;
+            @Placepiece.canceled -= instance.OnPlacepiece;
+            @Removepiece.started -= instance.OnRemovepiece;
+            @Removepiece.performed -= instance.OnRemovepiece;
+            @Removepiece.canceled -= instance.OnRemovepiece;
+            @MousePos.started -= instance.OnMousePos;
+            @MousePos.performed -= instance.OnMousePos;
+            @MousePos.canceled -= instance.OnMousePos;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="SpaceStationBuildingActions.UnregisterCallbacks(ISpaceStationBuildingActions)" />.
+        /// </summary>
+        /// <seealso cref="SpaceStationBuildingActions.UnregisterCallbacks(ISpaceStationBuildingActions)" />
+        public void RemoveCallbacks(ISpaceStationBuildingActions instance)
+        {
+            if (m_Wrapper.m_SpaceStationBuildingActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="SpaceStationBuildingActions.AddCallbacks(ISpaceStationBuildingActions)" />
+        /// <seealso cref="SpaceStationBuildingActions.RemoveCallbacks(ISpaceStationBuildingActions)" />
+        /// <seealso cref="SpaceStationBuildingActions.UnregisterCallbacks(ISpaceStationBuildingActions)" />
+        public void SetCallbacks(ISpaceStationBuildingActions instance)
+        {
+            foreach (var item in m_Wrapper.m_SpaceStationBuildingActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_SpaceStationBuildingActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="SpaceStationBuildingActions" /> instance referencing this action map.
+    /// </summary>
+    public SpaceStationBuildingActions @SpaceStationBuilding => new SpaceStationBuildingActions(this);
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Main" which allows adding and removing callbacks.
     /// </summary>
@@ -725,5 +949,41 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPause(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Space Station Building" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="SpaceStationBuildingActions.AddCallbacks(ISpaceStationBuildingActions)" />
+    /// <seealso cref="SpaceStationBuildingActions.RemoveCallbacks(ISpaceStationBuildingActions)" />
+    public interface ISpaceStationBuildingActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Exit builder" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnExitbuilder(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Place piece" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPlacepiece(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Remove piece" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRemovepiece(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "MousePos" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMousePos(InputAction.CallbackContext context);
     }
 }

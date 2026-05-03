@@ -275,6 +275,94 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "Space Station Building",
+            "id": "2af1769c-182f-4972-8097-8bc8c365eb9e",
+            "actions": [
+                {
+                    "name": "Exit builder",
+                    "type": "Button",
+                    "id": "070c3727-5a8d-4c5f-a80a-7cdb367c2cda",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Place piece",
+                    "type": "Button",
+                    "id": "aa1aa941-7e7f-4560-b273-a4547fc8fdd7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Remove piece",
+                    "type": "Button",
+                    "id": "732fe7a7-e0ae-4ec7-bda8-ba932aeb52c8",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MousePos",
+                    "type": "Value",
+                    "id": "db232fb3-dec3-4a6f-aab2-ada81f865f4e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "3fc0b74e-3f68-4f56-b84a-465bb2e212f6",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Exit builder",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "217e6c5e-7db2-40f5-9d11-7d8dd285a3b3",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Place piece",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1ff71eed-771b-49d9-9625-c22fbbf27bb2",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Remove piece",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "bf5905a1-3c92-474d-92c3-7444351dc759",
+                    "path": "<Mouse>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MousePos",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": []
